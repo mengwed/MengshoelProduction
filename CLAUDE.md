@@ -5,6 +5,17 @@
 - Skriv all kod och kommentarer på engelska
 - Skriv alla meddelanden till användaren på svenska
 
+## User Context
+
+Användaren är VD/företagare utan utvecklarerfarenhet. Ge alltid tydlig steg-för-steg-vägledning vid:
+- Supabase-hantering (migrationer, databasschema, RLS-policies, dashboard)
+- Deploy och hosting (Vercel, miljövariabler, domäner)
+- Git-operationer utöver det mest grundläggande
+- Terminalkommandon som behöver köras manuellt
+- Felsökning av infrastruktur
+
+Förklara *varför* saker behöver göras, inte bara *vad*. Undvik jargong utan förklaring.
+
 ## Tech Stack
 
 - Next.js 16 (App Router)
