@@ -188,18 +188,21 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
             </div>
           </div>
 
-          {doc.ai_needs_review && doc.ai_extracted_data && (
-            <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-yellow-400 text-sm font-medium mb-1">AI behover granskning</p>
-              {(doc.ai_extracted_data as Record<string, unknown>).review_reasons && (
-                <ul className="text-yellow-400/70 text-xs list-disc list-inside">
-                  {((doc.ai_extracted_data as Record<string, unknown>).review_reasons as string[]).map((r, i) => (
-                    <li key={i}>{r}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
+          {doc.ai_needs_review && doc.ai_extracted_data && (() => {
+            const reasons = (doc.ai_extracted_data as Record<string, unknown>).review_reasons as string[] | undefined
+            return (
+              <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-400 text-sm font-medium mb-1">AI behover granskning</p>
+                {reasons && reasons.length > 0 && (
+                  <ul className="text-yellow-400/70 text-xs list-disc list-inside">
+                    {reasons.map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )
+          })()}
 
           <div className="flex gap-3">
             <button
