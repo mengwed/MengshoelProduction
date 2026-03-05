@@ -44,8 +44,49 @@ export async function POST(request: Request) {
       return apiError('Inga transaktioner hittades i filen', 400)
     }
 
+    // Balance verification
+    let balanceWarning: string | null = null
+    for (let i = 1; i < transactions.length; i++) {
+      const prev = transactions[i - 1]
+      const curr = transactions[i]
+      if (prev.balance !== null && curr.balance !== null) {
+        const expectedBalance = prev.balance + curr.amount
+        if (Math.abs(expectedBalance - curr.balance) > 0.01) {
+          balanceWarning = `Saldoavvikelse pa rad ${i + 1}: forvantade ${expectedBalance.toFixed(2)}, fick ${curr.balance.toFixed(2)}`
+          break
+        }
+      }
+    }
+
+    // Duplicate detection: check existing transactions
+    const { data: existingTx } = await supabase
+      .from('bank_transactions')
+      .select('booking_date, amount, reference')
+      .eq('fiscal_year_id', fiscalYear.id)
+
+    const existingSet = new Set(
+      existingTx?.map(t => `${t.booking_date}|${t.amount}|${t.reference || ''}`) || []
+    )
+
+    const uniqueTransactions = transactions.filter(t => {
+      const key = `${t.booking_date}|${t.amount}|${t.reference || ''}`
+      return !existingSet.has(key)
+    })
+
+    const duplicateCount = transactions.length - uniqueTransactions.length
+
+    if (uniqueTransactions.length === 0) {
+      return apiSuccess({
+        imported: 0,
+        matched: 0,
+        unmatched: 0,
+        duplicates: duplicateCount,
+        balance_warning: balanceWarning,
+      })
+    }
+
     // Match against documents
-    const matched = await matchTransactions(transactions, fiscalYear.id)
+    const matched = await matchTransactions(uniqueTransactions, fiscalYear.id)
 
     // Insert into bank_transactions
     const batchId = crypto.randomUUID()
@@ -71,10 +112,11 @@ export async function POST(request: Request) {
     const matchedCount = matched.filter(m => m.matched_document_id).length
 
     return apiSuccess({
-      imported: transactions.length,
+      imported: uniqueTransactions.length,
       matched: matchedCount,
-      unmatched: transactions.length - matchedCount,
-      batch_id: batchId,
+      unmatched: uniqueTransactions.length - matchedCount,
+      duplicates: duplicateCount,
+      balance_warning: balanceWarning,
     })
   } catch (e) {
     return handleApiError(e)
