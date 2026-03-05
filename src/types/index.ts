@@ -104,6 +104,13 @@ export interface BankTransaction {
   matched_document_id: string | null
   import_batch_id: string
   created_at: string
+  // Joined fields
+  documents?: {
+    file_name: string
+    type: string
+    invoice_number: string | null
+    total: number | null
+  } | null
 }
 
 export interface DashboardStats {

@@ -3,23 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import SummaryBoxes from '@/components/SummaryBoxes'
-
-interface BankTransaction {
-  id: string
-  booking_date: string
-  transaction_date: string | null
-  transaction_type: string | null
-  reference: string | null
-  amount: number
-  balance: number | null
-  matched_document_id: string | null
-  documents: {
-    file_name: string
-    type: string
-    invoice_number: string | null
-    total: number | null
-  } | null
-}
+import type { BankTransaction } from '@/types'
 
 type Filter = 'all' | 'matched' | 'unmatched'
 
