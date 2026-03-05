@@ -1,22 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Document } from '@/types'
 import SummaryBoxes from '@/components/SummaryBoxes'
 import DocumentList from '@/components/DocumentList'
 import FileUpload from '@/components/FileUpload'
+import SearchInput from '@/components/SearchInput'
 
 export default function OvrigaDokumentPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [showUpload, setShowUpload] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  async function fetchDocuments() {
-    const res = await fetch('/api/documents?type=other')
+  const fetchDocuments = useCallback(async () => {
+    const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
+    const res = await fetch(`/api/documents?type=other${searchParam}`)
     const json = await res.json()
     setDocuments(json.data ?? json)
-  }
+  }, [searchQuery])
 
-  useEffect(() => { fetchDocuments() }, [])
+  useEffect(() => { fetchDocuments() }, [fetchDocuments])
 
   const govFees = documents.filter(d => d.type === 'government_fee')
   const loans = documents.filter(d => d.type === 'loan_statement')
@@ -28,6 +31,7 @@ export default function OvrigaDokumentPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-white">Övriga dokument</h1>
         <div className="flex gap-2">
+          <SearchInput onSearch={setSearchQuery} placeholder="Sok dokument..." />
           <a
             href="/api/documents/export?type=other"
             className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors text-sm"
