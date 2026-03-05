@@ -52,8 +52,7 @@ export const documentUpdateSchema = z.object({
 export function validateBody<T>(schema: z.ZodSchema<T>, data: unknown): { data: T } | { error: ReturnType<typeof apiError> } {
   const result = schema.safeParse(data)
   if (!result.success) {
-    const issues = result.error.issues ?? result.error.errors ?? []
-    const message = issues.map((e: { path: (string | number)[]; message: string }) => `${e.path.join('.')}: ${e.message}`).join(', ')
+    const message = result.error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
     return { error: apiError(message, 400) }
   }
   return { data: result.data }

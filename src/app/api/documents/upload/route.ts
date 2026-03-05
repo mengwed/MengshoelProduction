@@ -240,7 +240,7 @@ export async function POST(request: Request) {
 
     // Insert document lines for credit card statements
     if (aiResult.type === 'credit_card_statement' && aiResult.lines) {
-      const lines = aiResult.lines.map((line: { date: string; description: string; amount: number }) => ({
+      const lines = aiResult.lines.map((line) => ({
         document_id: doc.id,
         date: line.date,
         description: line.description,
