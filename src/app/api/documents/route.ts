@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const searchParams = request.nextUrl.searchParams
   const type = searchParams.get('type')
   const month = searchParams.get('month')
   const status = searchParams.get('status')
   const needsReview = searchParams.get('needsReview')
+  const supplierId = searchParams.get('supplier_id')
+  const customerId = searchParams.get('customer_id')
+  const categoryId = searchParams.get('category_id')
 
   let query = supabase
     .from('documents')
@@ -22,9 +25,11 @@ export async function GET(request: NextRequest) {
   if (type === 'outgoing') {
     query = query.eq('type', 'outgoing_invoice')
   } else if (type === 'incoming') {
+    query = query.eq('type', 'incoming_invoice')
+  } else if (type === 'other') {
     query = query.in('type', [
-      'incoming_invoice', 'credit_card_statement', 'government_fee',
-      'loan_statement', 'receipt', 'other'
+      'credit_card_statement', 'loan_statement',
+      'government_fee', 'receipt', 'payment_received', 'other'
     ])
   }
 
@@ -38,6 +43,18 @@ export async function GET(request: NextRequest) {
 
   if (needsReview === 'true') {
     query = query.eq('ai_needs_review', true)
+  }
+
+  if (supplierId) {
+    query = query.eq('supplier_id', supplierId)
+  }
+
+  if (customerId) {
+    query = query.eq('customer_id', customerId)
+  }
+
+  if (categoryId) {
+    query = query.eq('category_id', categoryId)
   }
 
   const { data, error } = await query

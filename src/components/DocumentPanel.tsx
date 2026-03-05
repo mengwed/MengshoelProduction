@@ -6,13 +6,13 @@ import type { Document, DocumentType, DocumentStatus, Customer, Supplier, Catego
 
 const TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
   { value: 'outgoing_invoice', label: 'Kundfaktura' },
-  { value: 'incoming_invoice', label: 'Leverantorsfaktura' },
+  { value: 'incoming_invoice', label: 'Leverantörsfaktura' },
   { value: 'payment_received', label: 'Inbetalning' },
   { value: 'credit_card_statement', label: 'Kontoutdrag' },
   { value: 'government_fee', label: 'Myndighetsavgift' },
-  { value: 'loan_statement', label: 'Laneavisering' },
+  { value: 'loan_statement', label: 'Låneavisering' },
   { value: 'receipt', label: 'Kvitto' },
-  { value: 'other', label: 'Ovrigt' },
+  { value: 'other', label: 'Övrigt' },
 ]
 
 const STATUS_OPTIONS: { value: DocumentStatus; label: string }[] = [
@@ -98,126 +98,137 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
       className="fixed inset-0 z-50 flex"
     >
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+
       <motion.div
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        exit={{ x: '100%' }}
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
         transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-        className="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-gray-950 border-l border-gray-800 overflow-y-auto"
+        className="absolute inset-4 top-8 bg-gray-950 border border-gray-800 rounded-2xl overflow-hidden flex flex-col"
       >
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white">{doc.file_name}</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl">&times;</button>
-          </div>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 shrink-0">
+          <h2 className="text-lg font-bold text-white truncate">{doc.file_name}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl ml-4 shrink-0">&times;</button>
+        </div>
 
-          {pdfUrl && (
-            <div className="mb-6 rounded-lg overflow-hidden border border-gray-800">
-              <iframe src={pdfUrl} className="w-full h-64" />
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Typ</label>
-              <select value={type} onChange={(e) => setType(e.target.value as DocumentType)} className={inputClass}>
-                {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Status</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value as DocumentStatus)} className={inputClass}>
-                {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Fakturanummer</label>
-              <input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Fakturadatum</label>
-              <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Forfallodag</label>
-              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Betalningsdatum</label>
-              <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Belopp (exkl moms)</label>
-              <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Moms</label>
-              <input type="number" step="0.01" value={vat} onChange={(e) => setVat(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Momssats (%)</label>
-              <input type="number" step="0.01" value={vatRate} onChange={(e) => setVatRate(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Totalt (inkl moms)</label>
-              <input type="number" step="0.01" value={total} onChange={(e) => setTotal(e.target.value)} className={inputClass} />
-            </div>
-            {isOutgoing ? (
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Kund</label>
-                <select value={customerId ?? ''} onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : null)} className={inputClass}>
-                  <option value="">Ingen</option>
-                  {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
+        {/* Body: PDF left, form right */}
+        <div className="flex flex-1 min-h-0">
+          {/* PDF viewer */}
+          <div className="w-1/2 border-r border-gray-800 bg-gray-900">
+            {pdfUrl ? (
+              <iframe src={pdfUrl} className="w-full h-full" />
             ) : (
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Leverantor</label>
-                <select value={supplierId ?? ''} onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : null)} className={inputClass}>
-                  <option value="">Ingen</option>
-                  {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+              <div className="flex items-center justify-center h-full text-gray-600">
+                Laddar PDF...
               </div>
             )}
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Kategori</label>
-              <select value={categoryId ?? ''} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)} className={inputClass}>
-                <option value="">Ingen</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.emoji ? `${c.emoji} ` : ''}{c.name}</option>)}
-              </select>
-            </div>
           </div>
 
-          {doc.ai_needs_review && doc.ai_extracted_data && (() => {
-            const reasons = (doc.ai_extracted_data as Record<string, unknown>).review_reasons as string[] | undefined
-            return (
-              <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-yellow-400 text-sm font-medium mb-1">AI behover granskning</p>
-                {reasons && reasons.length > 0 && (
-                  <ul className="text-yellow-400/70 text-xs list-disc list-inside">
-                    {reasons.map((r, i) => (
-                      <li key={i}>{r}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )
-          })()}
+          {/* Form */}
+          <div className="w-1/2 overflow-y-auto p-6">
+            {doc.ai_needs_review && doc.ai_extracted_data && (() => {
+              const reasons = (doc.ai_extracted_data as Record<string, unknown>).review_reasons as string[] | undefined
+              return (
+                <div className="mb-5 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <p className="text-yellow-400 text-sm font-medium mb-1">AI behöver granskning</p>
+                  {reasons && reasons.length > 0 && (
+                    <ul className="text-yellow-400/70 text-xs list-disc list-inside">
+                      {reasons.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )
+            })()}
 
-          <div className="flex gap-3">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all text-sm font-medium disabled:opacity-50"
-            >
-              {saving ? 'Sparar...' : 'Spara'}
-            </button>
-            <button
-              onClick={handleDelete}
-              className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors text-sm"
-            >
-              Ta bort
-            </button>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Typ</label>
+                <select value={type} onChange={(e) => setType(e.target.value as DocumentType)} className={inputClass}>
+                  {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Status</label>
+                <select value={status} onChange={(e) => setStatus(e.target.value as DocumentStatus)} className={inputClass}>
+                  {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Fakturanummer</label>
+                <input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Fakturadatum</label>
+                <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Förfallodag</label>
+                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Betalningsdatum</label>
+                <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Belopp (exkl moms)</label>
+                <input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Moms</label>
+                <input type="number" step="0.01" value={vat} onChange={(e) => setVat(e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Momssats (%)</label>
+                <input type="number" step="0.01" value={vatRate} onChange={(e) => setVatRate(e.target.value)} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Totalt (inkl moms)</label>
+                <input type="number" step="0.01" value={total} onChange={(e) => setTotal(e.target.value)} className={inputClass} />
+              </div>
+              {isOutgoing ? (
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Kund</label>
+                  <select value={customerId ?? ''} onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : null)} className={inputClass}>
+                    <option value="">Ingen</option>
+                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Leverantör</label>
+                  <select value={supplierId ?? ''} onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : null)} className={inputClass}>
+                    <option value="">Ingen</option>
+                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Kategori</label>
+                <select value={categoryId ?? ''} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)} className={inputClass}>
+                  <option value="">Ingen</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.emoji ? `${c.emoji} ` : ''}{c.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all text-sm font-medium disabled:opacity-50"
+              >
+                {saving ? 'Sparar...' : 'Spara'}
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors text-sm"
+              >
+                Ta bort
+              </button>
+            </div>
           </div>
         </div>
       </motion.div>

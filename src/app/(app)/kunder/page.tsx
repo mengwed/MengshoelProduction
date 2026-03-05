@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Customer, CustomerInput } from '@/types'
 import EntityForm from '@/components/EntityForm'
+import LinkedDocuments from '@/components/LinkedDocuments'
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Customer | null>(null)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchCustomers()
@@ -93,32 +95,51 @@ export default function CustomersPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.03 }}
-                className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
+                className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer group"
+                onClick={() => setExpandedId(expandedId === customer.id ? null : customer.id)}
               >
-                <td className="px-4 py-3 text-white font-medium">{customer.name}</td>
+                <td className="px-4 py-3 text-white font-medium">
+                  <span className="mr-2 text-gray-600 group-hover:text-gray-400 transition-colors">
+                    {expandedId === customer.id ? '▼' : '▶'}
+                  </span>
+                  {customer.name}
+                </td>
                 <td className="px-4 py-3 text-gray-400">{customer.org_number || '-'}</td>
                 <td className="px-4 py-3 text-gray-400">{customer.email || '-'}</td>
                 <td className="px-4 py-3 text-gray-400">{customer.city || '-'}</td>
                 <td className="px-4 py-3 text-right">
                   <button
-                    onClick={() => { setEditing(customer); setShowForm(false) }}
+                    onClick={(e) => { e.stopPropagation(); setEditing(customer); setShowForm(false) }}
                     className="text-xs text-gray-400 hover:text-white mr-3"
                   >
                     Redigera
                   </button>
                   <button
-                    onClick={() => handleDelete(customer.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(customer.id) }}
                     className="text-xs text-red-400 hover:text-red-300"
                   >
                     Ta bort
                   </button>
                 </td>
               </motion.tr>
-            ))}
+            )).flatMap((row, i) => {
+              const customer = customers[i]
+              const items = [row]
+              if (expandedId === customer.id) {
+                items.push(
+                  <tr key={`docs-${customer.id}`}>
+                    <td colSpan={5} className="px-4 pb-4 bg-gray-900/50">
+                      <LinkedDocuments filterParam="customer_id" filterId={customer.id} />
+                    </td>
+                  </tr>
+                )
+              }
+              return items
+            })}
           </tbody>
         </table>
         {customers.length === 0 && (
-          <p className="text-center text-gray-500 py-8">Inga kunder annu</p>
+          <p className="text-center text-gray-500 py-8">Inga kunder ännu</p>
         )}
       </div>
     </div>

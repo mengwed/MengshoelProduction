@@ -23,7 +23,7 @@ interface BankTransaction {
 
 type Filter = 'all' | 'matched' | 'unmatched'
 
-export default function BankavstamningPage() {
+export default function BankavstämningPage() {
   const [transactions, setTransactions] = useState<BankTransaction[]>([])
   const [filter, setFilter] = useState<Filter>('all')
   const [showUpload, setShowUpload] = useState(false)
@@ -83,7 +83,7 @@ export default function BankavstamningPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-white">Bankavstamning</h1>
+        <h1 className="text-2xl font-bold text-white">Bankavstämning</h1>
         <button
           onClick={() => setShowUpload(!showUpload)}
           className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all text-sm font-medium"
@@ -100,9 +100,9 @@ export default function BankavstamningPage() {
 
       {showUpload && (
         <div className="mb-8 p-6 bg-gray-900 border border-gray-800 rounded-xl">
-          <p className="text-gray-400 text-sm mb-4">Ladda upp kontoutdrag fran Swedbank (Excel-format)</p>
+          <p className="text-gray-400 text-sm mb-4">Ladda upp kontoutdrag från Swedbank (Excel-format)</p>
           <label className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm cursor-pointer">
-            {uploading ? 'Importerar...' : 'Valj Excel-fil'}
+            {uploading ? 'Importerar...' : 'Välj Excel-fil'}
             <input
               type="file"
               accept=".xlsx,.xls"

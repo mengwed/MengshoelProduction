@@ -6,29 +6,30 @@ import SummaryBoxes from '@/components/SummaryBoxes'
 import DocumentList from '@/components/DocumentList'
 import FileUpload from '@/components/FileUpload'
 
-export default function LeverantörsfakturorPage() {
+export default function OvrigaDokumentPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [showUpload, setShowUpload] = useState(false)
 
   async function fetchDocuments() {
-    const res = await fetch('/api/documents?type=incoming')
+    const res = await fetch('/api/documents?type=other')
     const data = await res.json()
     setDocuments(data)
   }
 
   useEffect(() => { fetchDocuments() }, [])
 
-  const totalExpenses = documents.reduce((sum, d) => sum + (d.amount ?? 0), 0)
-  const totalVat = documents.reduce((sum, d) => sum + (d.vat ?? 0), 0)
-  const needsReview = documents.filter((d) => d.ai_needs_review).length
+  const govFees = documents.filter(d => d.type === 'government_fee')
+  const loans = documents.filter(d => d.type === 'loan_statement')
+  const receipts = documents.filter(d => d.type === 'receipt')
+  const rest = documents.filter(d => !['government_fee', 'loan_statement', 'receipt'].includes(d.type))
 
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-white">Leverantörsfakturor</h1>
+        <h1 className="text-2xl font-bold text-white">Övriga dokument</h1>
         <div className="flex gap-2">
           <a
-            href="/api/documents/export?type=incoming"
+            href="/api/documents/export?type=other"
             className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors text-sm"
           >
             Exportera Excel
@@ -43,15 +44,15 @@ export default function LeverantörsfakturorPage() {
       </div>
 
       <SummaryBoxes boxes={[
-        { label: 'Kostnader', value: totalExpenses, icon: '📦' },
-        { label: 'Ingående moms', value: totalVat, icon: '🧾' },
-        { label: 'Antal', value: documents.length, icon: '📄', format: 'number' },
-        { label: 'Att granska', value: needsReview, icon: '⚠️', format: 'number' },
+        { label: 'Myndighetsavgifter', value: govFees.length, icon: '🏛️', format: 'number' },
+        { label: 'Låneaviseringar', value: loans.length, icon: '🏦', format: 'number' },
+        { label: 'Kvitton', value: receipts.length, icon: '🧾', format: 'number' },
+        { label: 'Övrigt', value: rest.length, icon: '📄', format: 'number' },
       ]} />
 
       {showUpload && (
         <div className="mb-8">
-          <FileUpload typeHint="incoming" onUploadComplete={fetchDocuments} />
+          <FileUpload onUploadComplete={fetchDocuments} />
         </div>
       )}
 

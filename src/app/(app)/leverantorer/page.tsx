@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Supplier, SupplierInput, Category } from '@/types'
 import EntityForm from '@/components/EntityForm'
+import LinkedDocuments from '@/components/LinkedDocuments'
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Supplier | null>(null)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchSuppliers()
@@ -48,7 +50,7 @@ export default function SuppliersPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('Ta bort denna leverantor?')) return
+    if (!confirm('Ta bort denna leverantör?')) return
     await fetch(`/api/suppliers/${id}`, { method: 'DELETE' })
     fetchSuppliers()
   }
@@ -56,12 +58,12 @@ export default function SuppliersPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-white">Leverantorer</h1>
+        <h1 className="text-2xl font-bold text-white">Leverantörer</h1>
         <button
           onClick={() => { setEditing(null); setShowForm(true) }}
           className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all text-sm font-medium"
         >
-          + Ny leverantor
+          + Ny leverantör
         </button>
       </div>
 
@@ -102,9 +104,15 @@ export default function SuppliersPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.03 }}
-                className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
+                className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer group"
+                onClick={() => setExpandedId(expandedId === supplier.id ? null : supplier.id)}
               >
-                <td className="px-4 py-3 text-white font-medium">{supplier.name}</td>
+                <td className="px-4 py-3 text-white font-medium">
+                  <span className="mr-2 text-gray-600 group-hover:text-gray-400 transition-colors">
+                    {expandedId === supplier.id ? '▼' : '▶'}
+                  </span>
+                  {supplier.name}
+                </td>
                 <td className="px-4 py-3 text-gray-400">
                   {supplier.category_emoji && <span className="mr-1">{supplier.category_emoji}</span>}
                   {supplier.category_name || '-'}
@@ -113,24 +121,37 @@ export default function SuppliersPage() {
                 <td className="px-4 py-3 text-gray-400">{supplier.email || '-'}</td>
                 <td className="px-4 py-3 text-right">
                   <button
-                    onClick={() => { setEditing(supplier); setShowForm(false) }}
+                    onClick={(e) => { e.stopPropagation(); setEditing(supplier); setShowForm(false) }}
                     className="text-xs text-gray-400 hover:text-white mr-3"
                   >
                     Redigera
                   </button>
                   <button
-                    onClick={() => handleDelete(supplier.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(supplier.id) }}
                     className="text-xs text-red-400 hover:text-red-300"
                   >
                     Ta bort
                   </button>
                 </td>
               </motion.tr>
-            ))}
+            )).flatMap((row, i) => {
+              const supplier = suppliers[i]
+              const items = [row]
+              if (expandedId === supplier.id) {
+                items.push(
+                  <tr key={`docs-${supplier.id}`}>
+                    <td colSpan={5} className="px-4 pb-4 bg-gray-900/50">
+                      <LinkedDocuments filterParam="supplier_id" filterId={supplier.id} />
+                    </td>
+                  </tr>
+                )
+              }
+              return items
+            })}
           </tbody>
         </table>
         {suppliers.length === 0 && (
-          <p className="text-center text-gray-500 py-8">Inga leverantorer annu</p>
+          <p className="text-center text-gray-500 py-8">Inga leverantörer ännu</p>
         )}
       </div>
     </div>

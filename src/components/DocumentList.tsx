@@ -7,13 +7,13 @@ import DocumentPanel from '@/components/DocumentPanel'
 
 const TYPE_LABELS: Record<string, string> = {
   outgoing_invoice: 'Kundfaktura',
-  incoming_invoice: 'Leverantorsfaktura',
+  incoming_invoice: 'Leverantörsfaktura',
   payment_received: 'Inbetalning',
   credit_card_statement: 'Kontoutdrag',
   government_fee: 'Myndighetsavgift',
-  loan_statement: 'Laneavisering',
+  loan_statement: 'Låneavisering',
   receipt: 'Kvitto',
-  other: 'Ovrigt',
+  other: 'Övrigt',
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -59,7 +59,7 @@ export default function DocumentList({ documents, onUpdate }: Props) {
             <tr className="border-b border-gray-800">
               <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Datum</th>
               <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Typ</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Kund/Leverantor</th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Kund/Leverantör</th>
               <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Fakturanr</th>
               <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Belopp</th>
               <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Moms</th>
@@ -92,7 +92,7 @@ export default function DocumentList({ documents, onUpdate }: Props) {
                 </td>
                 <td className="px-4 py-3 text-center">
                   {doc.ai_needs_review ? (
-                    <span className="text-yellow-400 text-sm" title="Behover granskas">⚠️</span>
+                    <span className="text-yellow-400 text-sm" title="Behöver granskas">⚠️</span>
                   ) : (
                     <span className="text-green-400 text-sm">{doc.ai_confidence}%</span>
                   )}
@@ -102,7 +102,7 @@ export default function DocumentList({ documents, onUpdate }: Props) {
           </tbody>
         </table>
         {documents.length === 0 && (
-          <p className="text-center text-gray-500 py-8">Inga dokument annu</p>
+          <p className="text-center text-gray-500 py-8">Inga dokument ännu</p>
         )}
       </div>
 

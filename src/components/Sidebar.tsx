@@ -9,10 +9,11 @@ import FiscalYearSelector from '@/components/FiscalYearSelector'
 const navItems = [
   { href: '/', label: 'Dashboard', icon: '📊' },
   { href: '/kundfakturor', label: 'Kundfakturor', icon: '💰' },
-  { href: '/leverantorsfakturor', label: 'Leverantorsfakturor', icon: '📦' },
-  { href: '/bankavstamning', label: 'Bankavstamning', icon: '🏦' },
+  { href: '/leverantorsfakturor', label: 'Leverantörsfakturor', icon: '📦' },
+  { href: '/ovriga-dokument', label: 'Övriga dokument', icon: '📋' },
+  { href: '/bankavstamning', label: 'Bankavstämning', icon: '🏦' },
   { href: '/kunder', label: 'Kunder', icon: '👥' },
-  { href: '/leverantorer', label: 'Leverantorer', icon: '🏢' },
+  { href: '/leverantorer', label: 'Leverantörer', icon: '🏢' },
   { href: '/kategorier', label: 'Kategorier', icon: '🏷️' },
 ]
 
@@ -53,7 +54,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="px-3 pb-2">
-        <label className="block text-xs text-gray-500 mb-1 px-1">Rakenskapsar</label>
+        <label className="block text-xs text-gray-500 mb-1 px-1">Räkenskapsår</label>
         <FiscalYearSelector />
       </div>
 

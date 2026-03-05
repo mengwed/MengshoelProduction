@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Category, CategoryInput } from '@/types'
+import EmojiPicker from '@/components/EmojiPicker'
 
 interface Props {
   category?: Category
@@ -21,23 +22,20 @@ export default function CategoryForm({ category, onSave, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm text-gray-400 mb-1">Emoji</label>
-        <input
-          value={emoji}
-          onChange={(e) => setEmoji(e.target.value)}
-          className="w-20 px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white text-center text-2xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-          maxLength={2}
-        />
-      </div>
-      <div>
-        <label className="block text-sm text-gray-400 mb-1">Namn</label>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          className="w-full px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-        />
+      <div className="flex items-end gap-4">
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Emoji</label>
+          <EmojiPicker value={emoji} onChange={setEmoji} />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm text-gray-400 mb-1">Namn</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="w-full px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
       </div>
       <div>
         <label className="block text-sm text-gray-400 mb-1">Beskrivning</label>

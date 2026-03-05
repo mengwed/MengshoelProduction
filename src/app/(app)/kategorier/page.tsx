@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Category, CategoryInput } from '@/types'
 import CategoryForm from '@/components/CategoryForm'
+import LinkedDocuments from '@/components/LinkedDocuments'
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Category | null>(null)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchCategories()
@@ -74,34 +76,49 @@ export default function CategoriesPage() {
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {categories.map((cat, i) => (
           <motion.div
             key={cat.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-gray-700 transition-colors group"
+            className={`p-4 bg-gray-900 border rounded-xl transition-colors cursor-pointer group ${
+              expandedId === cat.id ? 'border-purple-500/50' : 'border-gray-800 hover:border-gray-700'
+            }`}
+            onClick={() => setExpandedId(expandedId === cat.id ? null : cat.id)}
           >
-            <div className="text-3xl mb-2">{cat.emoji || '📁'}</div>
-            <h3 className="text-white font-medium">{cat.name}</h3>
-            {cat.description && (
-              <p className="text-gray-500 text-sm mt-1">{cat.description}</p>
-            )}
-            <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => { setEditing(cat); setShowForm(false) }}
-                className="text-xs text-gray-400 hover:text-white"
-              >
-                Redigera
-              </button>
-              <button
-                onClick={() => handleDelete(cat.id)}
-                className="text-xs text-red-400 hover:text-red-300"
-              >
-                Ta bort
-              </button>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">{cat.emoji || '📁'}</div>
+                <div>
+                  <h3 className="text-white font-medium">{cat.name}</h3>
+                  {cat.description && (
+                    <p className="text-gray-500 text-sm">{cat.description}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setEditing(cat); setShowForm(false) }}
+                  className="text-xs text-gray-400 hover:text-white"
+                >
+                  Redigera
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(cat.id) }}
+                  className="text-xs text-red-400 hover:text-red-300"
+                >
+                  Ta bort
+                </button>
+              </div>
             </div>
+
+            {expandedId === cat.id && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <LinkedDocuments filterParam="category_id" filterId={cat.id} />
+              </div>
+            )}
           </motion.div>
         ))}
       </div>

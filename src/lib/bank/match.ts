@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import type { ParsedTransaction } from './parse-swedbank'
 
 interface MatchResult {
@@ -10,7 +10,7 @@ export async function matchTransactions(
   transactions: ParsedTransaction[],
   fiscalYearId: number
 ): Promise<MatchResult[]> {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   // Load all documents for matching
   const { data: documents } = await supabase

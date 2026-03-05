@@ -91,11 +91,11 @@ export default function FileUpload({ typeHint, onUploadComplete }: Props) {
         }`}
       >
         <p className="text-gray-400 text-lg mb-2">
-          Dra och slapp PDF-filer har
+          Dra och släpp PDF-filer här
         </p>
         <p className="text-gray-600 text-sm mb-4">eller</p>
         <label className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm cursor-pointer">
-          Valj filer
+          Välj filer
           <input
             type="file"
             accept=".pdf"

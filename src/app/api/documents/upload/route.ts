@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { extractFromPDF } from '@/lib/ai/extract'
 import { findMatchingCustomer, findMatchingSupplier, findMatchingInvoice } from '@/lib/matching'
 
+function sanitizeFileName(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+}
+
 export async function POST(request: Request) {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const formData = await request.formData()
   const file = formData.get('file') as File
@@ -42,7 +49,8 @@ export async function POST(request: Request) {
 
   // Upload to Supabase Storage
   const fileBuffer = await file.arrayBuffer()
-  const filePath = `${fiscalYear.year}/${crypto.randomUUID()}-${file.name}`
+  const safeName = sanitizeFileName(file.name)
+  const filePath = `${fiscalYear.year}/${crypto.randomUUID()}-${safeName}`
 
   const { error: uploadError } = await supabase.storage
     .from('documents')
@@ -52,9 +60,59 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: uploadError.message }, { status: 500 })
   }
 
+  // Load context for AI
+  const [
+    { data: existingSuppliers },
+    { data: existingCustomers },
+    { data: existingCategories },
+    { data: recentCorrections },
+  ] = await Promise.all([
+    supabase.from('suppliers').select('name').order('name'),
+    supabase.from('customers').select('name').order('name'),
+    supabase.from('categories').select('name, emoji'),
+    supabase.from('ai_corrections').select('*').order('created_at', { ascending: false }).limit(20),
+  ])
+
+  const context = {
+    suppliers: existingSuppliers?.map(s => s.name) || [],
+    customers: existingCustomers?.map(c => c.name) || [],
+    categories: existingCategories?.map(c => `${c.emoji || ''} ${c.name}`.trim()) || [],
+    corrections: recentCorrections?.map(c => {
+      if (c.field_name === 'type') {
+        return `- "${c.counterpart_name || 'okänd'}": AI sa ${c.ai_value}, användaren ändrade till ${c.corrected_value}`
+      }
+      if (c.field_name === 'category_id') {
+        return `- "${c.counterpart_name || 'okänd'}": kategori ändrad från ${c.ai_value || 'ingen'} till ${c.corrected_value}`
+      }
+      return null
+    }).filter(Boolean) as string[] || [],
+  }
+
   // AI extraction
-  const base64 = Buffer.from(fileBuffer).toString('base64')
-  const aiResult = await extractFromPDF(base64, file.name)
+  let aiResult
+  try {
+    const base64 = Buffer.from(fileBuffer).toString('base64')
+    aiResult = await extractFromPDF(base64, file.name, context)
+  } catch (err) {
+    console.error('AI extraction error:', err)
+    // AI extraction failed (no API key or error) — create with defaults
+    aiResult = {
+      type: typeHint === 'outgoing' ? 'outgoing_invoice' as const : 'incoming_invoice' as const,
+      invoice_number: null,
+      invoice_date: null,
+      due_date: null,
+      amount: null,
+      vat: null,
+      vat_rate: null,
+      total: null,
+      counterpart_name: null,
+      counterpart_org_number: null,
+      confidence: 0,
+      needs_review: true,
+      review_reasons: ['AI-extraktion misslyckades'],
+      lines: null,
+    }
+  }
 
   // Override type if user uploaded from a specific page
   if (typeHint === 'outgoing' && aiResult.confidence < 90) {
@@ -63,27 +121,94 @@ export async function POST(request: Request) {
     aiResult.type = 'incoming_invoice'
   }
 
-  // Match customer/supplier
+  // Match or create customer/supplier
   let customerId: number | null = null
   let supplierId: number | null = null
   let linkedDocumentId: string | null = null
 
   if (aiResult.counterpart_name) {
-    if (aiResult.type === 'outgoing_invoice') {
+    const isCustomerType = aiResult.type === 'outgoing_invoice' || aiResult.type === 'payment_received'
+
+    if (isCustomerType) {
       const customer = await findMatchingCustomer(aiResult.counterpart_name)
-      customerId = customer?.id ?? null
-    } else if (aiResult.type === 'payment_received') {
-      const customer = await findMatchingCustomer(aiResult.counterpart_name)
-      customerId = customer?.id ?? null
-      // Try to match payment to invoice
-      if (aiResult.invoice_number) {
+      if (customer) {
+        customerId = customer.id
+      } else {
+        // Auto-create customer
+        const { data: newCustomer } = await supabase
+          .from('customers')
+          .insert({
+            name: aiResult.counterpart_name,
+            org_number: aiResult.counterpart_org_number || null,
+          })
+          .select('id')
+          .single()
+        if (newCustomer) customerId = newCustomer.id
+      }
+
+      if (aiResult.type === 'payment_received' && aiResult.invoice_number) {
         const invoice = await findMatchingInvoice(aiResult.invoice_number)
         linkedDocumentId = invoice?.id ?? null
       }
-    } else {
+    } else if (aiResult.type !== 'credit_card_statement') {
       const supplier = await findMatchingSupplier(aiResult.counterpart_name)
-      supplierId = supplier?.id ?? null
+      if (supplier) {
+        supplierId = supplier.id
+      } else {
+        // Auto-create supplier
+        const { data: newSupplier } = await supabase
+          .from('suppliers')
+          .insert({
+            name: aiResult.counterpart_name,
+            org_number: aiResult.counterpart_org_number || null,
+          })
+          .select('id')
+          .single()
+        if (newSupplier) supplierId = newSupplier.id
+      }
     }
+  }
+
+  // Smart duplicate detection: same amount + same supplier/customer + close date
+  if (aiResult.total && (supplierId || customerId)) {
+    let dupQuery = supabase
+      .from('documents')
+      .select('id, file_name, invoice_date')
+      .eq('fiscal_year_id', fiscalYear.id)
+      .eq('total', aiResult.total)
+
+    if (supplierId) dupQuery = dupQuery.eq('supplier_id', supplierId)
+    if (customerId) dupQuery = dupQuery.eq('customer_id', customerId)
+
+    const { data: possibleDups } = await dupQuery
+
+    if (possibleDups && possibleDups.length > 0 && aiResult.invoice_date) {
+      const uploadDate = new Date(aiResult.invoice_date).getTime()
+      const closeDup = possibleDups.find(d => {
+        if (!d.invoice_date) return false
+        const daysDiff = Math.abs(uploadDate - new Date(d.invoice_date).getTime()) / (1000 * 60 * 60 * 24)
+        return daysDiff < 3
+      })
+
+      if (closeDup) {
+        return NextResponse.json({
+          error: 'possible_duplicate',
+          existing: closeDup,
+          message: `Möjlig dubblett: samma belopp (${aiResult.total} kr) och leverantör, nära datum som "${closeDup.file_name}"`,
+        }, { status: 409 })
+      }
+    }
+  }
+
+  // Auto-assign category from supplier if available
+  let categoryId: number | null = null
+  if (supplierId) {
+    const { data: supplierData } = await supabase
+      .from('suppliers')
+      .select('category_id')
+      .eq('id', supplierId)
+      .single()
+    if (supplierData?.category_id) categoryId = supplierData.category_id
   }
 
   // Insert document
@@ -102,6 +227,7 @@ export async function POST(request: Request) {
       vat: aiResult.vat,
       vat_rate: aiResult.vat_rate,
       total: aiResult.total,
+      category_id: categoryId,
       file_path: filePath,
       file_name: file.name,
       ai_extracted_data: aiResult,

@@ -2,14 +2,45 @@ import Anthropic from '@anthropic-ai/sdk'
 import { EXTRACTION_PROMPT } from './prompt'
 import type { AIExtractionResult } from '@/types'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-})
+interface ExtractionContext {
+  suppliers?: string[]
+  customers?: string[]
+  categories?: string[]
+  corrections?: string[]
+}
 
 export async function extractFromPDF(
   pdfBase64: string,
-  filenameHint?: string
+  filenameHint?: string,
+  context?: ExtractionContext
 ): Promise<AIExtractionResult> {
+  const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+  })
+
+  // Build context section
+  let contextSection = ''
+
+  if (context?.customers?.length) {
+    contextSection += `\n\nBEFINTLIGA KUNDER (matcha mot dessa om möjligt):\n${context.customers.join(', ')}`
+  }
+
+  if (context?.suppliers?.length) {
+    contextSection += `\n\nBEFINTLIGA LEVERANTÖRER (matcha counterpart_name mot dessa om möjligt):\n${context.suppliers.join(', ')}`
+  }
+
+  if (context?.categories?.length) {
+    contextSection += `\n\nBEFINTLIGA KATEGORIER:\n${context.categories.join(', ')}`
+  }
+
+  if (context?.corrections?.length) {
+    contextSection += `\n\nTIDIGARE KORRIGERINGAR (lär dig av dessa - användaren har rättat AI:ns klassificering):\n${context.corrections.join('\n')}`
+  }
+
+  const fullPrompt = filenameHint
+    ? `${EXTRACTION_PROMPT}${contextSection}\n\nFilnamn: ${filenameHint}`
+    : `${EXTRACTION_PROMPT}${contextSection}`
+
   const messages: Anthropic.MessageParam[] = [
     {
       role: 'user',
@@ -24,9 +55,7 @@ export async function extractFromPDF(
         },
         {
           type: 'text',
-          text: filenameHint
-            ? `${EXTRACTION_PROMPT}\n\nFilnamn: ${filenameHint}`
-            : EXTRACTION_PROMPT,
+          text: fullPrompt,
         },
       ],
     },
@@ -43,6 +72,12 @@ export async function extractFromPDF(
     throw new Error('No text response from AI')
   }
 
-  const parsed = JSON.parse(textBlock.text) as AIExtractionResult
+  // Strip markdown code fences if present (```json ... ```)
+  let jsonText = textBlock.text.trim()
+  if (jsonText.startsWith('```')) {
+    jsonText = jsonText.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+  }
+
+  const parsed = JSON.parse(jsonText) as AIExtractionResult
   return parsed
 }
