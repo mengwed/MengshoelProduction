@@ -63,8 +63,8 @@ export async function matchTransactions(
     if (!matchedId && tx.reference) {
       const refLower = tx.reference.toLowerCase()
       for (const doc of documents) {
-        const name = (doc.customers as Record<string, string> | null)?.name
-          || (doc.suppliers as Record<string, string> | null)?.name
+        const name = (doc.customers as unknown as Record<string, string> | null)?.name
+          || (doc.suppliers as unknown as Record<string, string> | null)?.name
         if (name && refLower.includes(name.toLowerCase().slice(0, 8))) {
           matchedId = doc.id
           break
