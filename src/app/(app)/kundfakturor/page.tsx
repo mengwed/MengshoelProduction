@@ -26,12 +26,20 @@ export default function KundfakturorPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-white">Kundfakturor</h1>
-        <button
-          onClick={() => setShowUpload(!showUpload)}
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all text-sm font-medium"
-        >
-          + Ladda upp
-        </button>
+        <div className="flex gap-2">
+          <a
+            href="/api/documents/export?type=outgoing"
+            className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors text-sm"
+          >
+            Exportera Excel
+          </a>
+          <button
+            onClick={() => setShowUpload(!showUpload)}
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all text-sm font-medium"
+          >
+            + Ladda upp
+          </button>
+        </div>
       </div>
 
       <SummaryBoxes boxes={[
