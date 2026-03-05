@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const supplierId = searchParams.get('supplier_id')
     const customerId = searchParams.get('customer_id')
     const categoryId = searchParams.get('category_id')
+    const search = searchParams.get('search')
 
     let query = supabase
       .from('documents')
@@ -59,6 +60,13 @@ export async function GET(request: NextRequest) {
 
     if (categoryId) {
       query = query.eq('category_id', categoryId)
+    }
+
+    if (search) {
+      const term = `%${search}%`
+      query = query.or(
+        `file_name.ilike.${term},invoice_number.ilike.${term},suppliers.name.ilike.${term},customers.name.ilike.${term}`
+      )
     }
 
     const { data, error } = await query
