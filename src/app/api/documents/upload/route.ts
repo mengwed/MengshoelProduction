@@ -4,6 +4,7 @@ import { uploadLimiter } from '@/lib/rate-limit-instances'
 import { sanitizeObject } from '@/lib/sanitize'
 import { createServiceClient } from '@/lib/supabase/server'
 import { extractFromPDF } from '@/lib/ai/extract'
+import { validateExtractionResult } from '@/lib/ai/validate'
 import { findMatchingCustomer, findMatchingSupplier, findMatchingInvoice } from '@/lib/matching'
 
 function sanitizeFileName(name: string): string {
@@ -97,18 +98,40 @@ export async function POST(request: Request) {
       }).filter(Boolean) as string[] || [],
     }
 
-    // AI extraction
+    // AI extraction with validation
     let aiResult
     try {
       const base64 = Buffer.from(fileBuffer).toString('base64')
       aiResult = await extractFromPDF(base64, file.name, context)
-      // Sanitize AI output to prevent XSS
       aiResult = sanitizeObject(aiResult)
+      aiResult = validateExtractionResult(aiResult)
     } catch (err) {
       console.error('AI extraction error:', err)
-      // Clean up uploaded file
-      await supabase.storage.from('documents').remove([filePath])
-      return apiError('AI extraction failed. Please try again later.', 503)
+      // Create document with empty extraction instead of deleting the file
+      const { data: doc, error: insertError } = await supabase
+        .from('documents')
+        .insert({
+          type: 'other',
+          fiscal_year_id: fiscalYear.id,
+          file_path: filePath,
+          file_name: file.name,
+          ai_extracted_data: null,
+          ai_confidence: 0,
+          ai_needs_review: true,
+          status: 'imported',
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        await supabase.storage.from('documents').remove([filePath])
+        return apiError(insertError.message, 500)
+      }
+
+      return apiSuccess({
+        ...doc,
+        warning: 'AI-extraktion misslyckades. Dokumentet sparades men behover granskas manuellt.',
+      }, 201)
     }
 
     // Override type if user uploaded from a specific page
@@ -204,7 +227,13 @@ export async function POST(request: Request) {
         .select('category_id')
         .eq('id', supplierId)
         .single()
-      if (supplierData?.category_id) categoryId = supplierData.category_id
+      if (supplierData?.category_id) {
+        categoryId = supplierData.category_id
+        // Boost confidence when we have confirmed supplier category
+        if (aiResult.confidence < 100) {
+          aiResult.confidence = Math.min(100, aiResult.confidence + 5)
+        }
+      }
     }
 
     // Insert document
