@@ -1,32 +1,47 @@
-import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
+import { apiSuccess, apiError, handleApiError } from '@/lib/api-response'
+import { categorySchema, validateBody } from '@/lib/validations'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const supabase = createServiceClient()
-  const body = await request.json()
+  try {
+    await requireAuth()
+    const { id } = await params
+    const supabase = createServiceClient()
+    const body = await request.json()
 
-  const { data, error } = await supabase
-    .from('categories')
-    .update(body)
-    .eq('id', id)
-    .select()
-    .single()
+    const validated = validateBody(categorySchema, body)
+    if ('error' in validated) return validated.error
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+    const { data, error } = await supabase
+      .from('categories')
+      .update(validated.data)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) return apiError(error.message, 500)
+    return apiSuccess(data)
+  } catch (e) {
+    return handleApiError(e)
+  }
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const supabase = createServiceClient()
+  try {
+    await requireAuth()
+    const { id } = await params
+    const supabase = createServiceClient()
 
-  // Remove category references first
-  await supabase.from('suppliers').update({ category_id: null }).eq('category_id', id)
-  await supabase.from('documents').update({ category_id: null }).eq('category_id', id)
+    // Remove category references first
+    await supabase.from('suppliers').update({ category_id: null }).eq('category_id', id)
+    await supabase.from('documents').update({ category_id: null }).eq('category_id', id)
 
-  const { error } = await supabase.from('categories').delete().eq('id', id)
+    const { error } = await supabase.from('categories').delete().eq('id', id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ success: true })
+    if (error) return apiError(error.message, 500)
+    return apiSuccess({ success: true })
+  } catch (e) {
+    return handleApiError(e)
+  }
 }

@@ -1,35 +1,50 @@
-import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
+import { apiSuccess, apiError, handleApiError } from '@/lib/api-response'
+import { supplierSchema, validateBody } from '@/lib/validations'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET() {
-  const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('suppliers')
-    .select('*, categories(name, emoji)')
-    .order('name')
+  try {
+    await requireAuth()
+    const supabase = createServiceClient()
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*, categories(name, emoji)')
+      .order('name')
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return apiError(error.message, 500)
 
-  const suppliers = data?.map((s: Record<string, unknown>) => ({
-    ...s,
-    category_name: (s.categories as Record<string, string> | null)?.name,
-    category_emoji: (s.categories as Record<string, string> | null)?.emoji,
-    categories: undefined,
-  }))
+    const suppliers = data?.map((s: Record<string, unknown>) => ({
+      ...s,
+      category_name: (s.categories as Record<string, string> | null)?.name,
+      category_emoji: (s.categories as Record<string, string> | null)?.emoji,
+      categories: undefined,
+    }))
 
-  return NextResponse.json(suppliers)
+    return apiSuccess(suppliers)
+  } catch (e) {
+    return handleApiError(e)
+  }
 }
 
 export async function POST(request: Request) {
-  const supabase = createServiceClient()
-  const body = await request.json()
+  try {
+    await requireAuth()
+    const supabase = createServiceClient()
+    const body = await request.json()
 
-  const { data, error } = await supabase
-    .from('suppliers')
-    .insert(body)
-    .select()
-    .single()
+    const validated = validateBody(supplierSchema, body)
+    if ('error' in validated) return validated.error
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+    const { data, error } = await supabase
+      .from('suppliers')
+      .insert(validated.data)
+      .select()
+      .single()
+
+    if (error) return apiError(error.message, 500)
+    return apiSuccess(data, 201)
+  } catch (e) {
+    return handleApiError(e)
+  }
 }
