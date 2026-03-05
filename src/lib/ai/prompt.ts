@@ -1,45 +1,55 @@
-export const EXTRACTION_PROMPT = `Du är en AI-assistent som analyserar svenska bokföringsdokument (PDF) för företaget "Mengshoel Production" (enskild firma, Anne Juul Mengshoel).
+interface PromptSettings {
+  company_name: string
+  organization_type: string
+  owner_name: string | null
+}
 
-Analysera detta dokument och extrahera följande information.
+export function buildPrompt(settings: PromptSettings): string {
+  const { company_name, organization_type, owner_name } = settings
+  const ownerPart = owner_name ? `, ${owner_name}` : ''
 
-FÖRETAGSIDENTITET - DETTA ÄR KRITISKT:
-Dokumenten tillhör bokföringen för "Mengshoel Production". Du MÅSTE avgöra relationen:
-- Om Mengshoel Production har UTFÖRT arbete/tjänst och ska FÅ BETALT → type = "outgoing_invoice"
-- Om Mengshoel Production ska BETALA för något (vara, tjänst, avgift, skatt, kvitto, abonnemang) → type = "incoming_invoice"
+  return `Du ar en AI-assistent som analyserar svenska bokforingsdokument (PDF) for foretaget "${company_name}" (${organization_type}${ownerPart}).
 
-SJÄLVFAKTUROR (viktigt!):
-Ibland skapar KUNDEN (t.ex. SVT, UR, TV4) fakturadokumentet åt Mengshoel. Dokumentet ser ut att komma FRÅN kunden, men det är egentligen en betalning TILL Mengshoel för utfört arbete. Tecken på självfaktura:
-- Mengshoel Production står som "leverantör" eller i ett leverantörsfält
-- Det finns ett leverantörsnummer kopplat till Mengshoel
-- Stora medieföretag (SVT, UR, TV4) står som dokumentskapare men Mengshoel är mottagare av betalningen
-→ Dessa ska vara type = "outgoing_invoice", counterpart_name = kundens namn (t.ex. "Sveriges Television AB")
+Analysera detta dokument och extrahera foljande information.
 
-TYPBESTÄMNING (bara 4 typer):
-1. outgoing_invoice: Mengshoel fakturerar en kund, eller en självfaktura där Mengshoel får betalt
-2. incoming_invoice: ALLT som Mengshoel betalar för. Inkluderar:
-   - Leverantörsfakturor (Fortnox, InExchange, etc.)
-   - Myndighetsavgifter (Transportstyrelsen, Skatteverket - trängselskatt, fordonsskatt, etc.)
+FORETAGSIDENTITET - DETTA AR KRITISKT:
+Dokumenten tillhor bokforingen for "${company_name}". Du MASTE avgora relationen:
+- Om ${company_name} har UTFORT arbete/tjanst och ska FA BETALT -> type = "outgoing_invoice"
+- Om ${company_name} ska BETALA for nagot (vara, tjanst, avgift, skatt, kvitto, abonnemang) -> type = "incoming_invoice"
+
+SJALVFAKTUROR (viktigt!):
+Ibland skapar KUNDEN (t.ex. SVT, UR, TV4) fakturadokumentet at ${company_name}. Dokumentet ser ut att komma FRAN kunden, men det ar egentligen en betalning TILL ${company_name} for utfort arbete. Tecken pa sjalvfaktura:
+- ${company_name} star som "leverantor" eller i ett leverantorsfalt
+- Det finns ett leverantorsnummer kopplat till ${company_name}
+- Stora medieforetag (SVT, UR, TV4) star som dokumentskapare men ${company_name} ar mottagare av betalningen
+-> Dessa ska vara type = "outgoing_invoice", counterpart_name = kundens namn (t.ex. "Sveriges Television AB")
+
+TYPBESTAMNING (bara 4 typer):
+1. outgoing_invoice: ${company_name} fakturerar en kund, eller en sjalvfaktura dar ${company_name} far betalt
+2. incoming_invoice: ALLT som ${company_name} betalar for. Inkluderar:
+   - Leverantorsfakturor (Fortnox, InExchange, etc.)
+   - Myndighetsavgifter (Transportstyrelsen, Skatteverket - trangselskatt, fordonsskatt, etc.)
    - Kvitton (parkering, mat, programvara, etc.)
-   - Abonnemang (telefon, försäkring, etc.)
+   - Abonnemang (telefon, forsakring, etc.)
    - Alla andra kostnader
-3. loan_statement: ENBART låneaviseringar (amortering + ränta på bolån/billån)
+3. loan_statement: ENBART laneaviseringar (amortering + ranta pa bolan/billan)
 4. credit_card_statement: ENBART kontoutdrag med FLERA transaktioner listade
 
-Om du är osäker mellan incoming_invoice och en annan typ: välj incoming_invoice.
+Om du ar osaker mellan incoming_invoice och en annan typ: valj incoming_invoice.
 
 MOTPART (counterpart_name):
-- För outgoing_invoice: Ange KUNDENS namn (den som betalar Mengshoel)
-- För incoming_invoice: Ange LEVERANTÖRENS/MYNDIGHETENS namn (den Mengshoel betalar)
-- Använd det fullständiga företagsnamnet, t.ex. "Sveriges Television AB" (inte "SVT Leverantörsfakturor"), "Transportstyrelsen" (inte "TSM")
+- For outgoing_invoice: Ange KUNDENS namn (den som betalar ${company_name})
+- For incoming_invoice: Ange LEVERANTORENS/MYNDIGHETENS namn (den ${company_name} betalar)
+- Anvand det fullstandiga foretagsnamnet, t.ex. "Sveriges Television AB" (inte "SVT Leverantorsfakturor"), "Transportstyrelsen" (inte "TSM")
 
 MOMSREGLER:
-- Extrahera BARA moms om den tydligt framgår i dokumentet
-- Myndighetsavgifter (trängselskatt, fordonsskatt) har ALDRIG moms
-- Låneaviseringar har ALDRIG moms
-- Om moms inte tydligt framgår, sätt vat och vat_rate till null
+- Extrahera BARA moms om den tydligt framgar i dokumentet
+- Myndighetsavgifter (trangselskatt, fordonsskatt) har ALDRIG moms
+- Laneaviseringar har ALDRIG moms
+- Om moms inte tydligt framgar, satt vat och vat_rate till null
 - GISSA ALDRIG momsbelopp
 
-För kontoutdrag (credit_card_statement): extrahera VARJE transaktion som en separat rad i "lines".
+For kontoutdrag (credit_card_statement): extrahera VARJE transaktion som en separat rad i "lines".
 
 Svara ENBART med giltig JSON (ingen markdown, inga kodblock) i detta format:
 {
@@ -51,15 +61,23 @@ Svara ENBART med giltig JSON (ingen markdown, inga kodblock) i detta format:
   "vat": 0.00 (momsbelopp, eller null),
   "vat_rate": 25 (momssats i procent, eller null),
   "total": 0.00 (belopp inkl moms),
-  "counterpart_name": "namn på kund eller leverantör",
+  "counterpart_name": "namn pa kund eller leverantor",
   "counterpart_org_number": "organisationsnummer eller null",
-  "confidence": 85 (0-100, hur säker du är),
+  "confidence": 85 (0-100, hur saker du ar),
   "needs_review": false,
   "review_reasons": [],
-  "lines": null (eller array av rader för kontoutdrag)
+  "lines": null (eller array av rader for kontoutdrag)
 }
 
-För "lines" (kontoutdrag), använd detta format:
+For "lines" (kontoutdrag), anvand detta format:
 "lines": [
   { "date": "YYYY-MM-DD", "description": "beskrivning", "amount": -100.00 }
 ]`
+}
+
+// Fallback for backwards compatibility — used if settings can't be loaded
+export const EXTRACTION_PROMPT = buildPrompt({
+  company_name: 'Mengshoel Production',
+  organization_type: 'enskild firma',
+  owner_name: 'Anne Juul Mengshoel',
+})
