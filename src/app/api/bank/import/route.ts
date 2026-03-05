@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth'
 import { apiSuccess, apiError, handleApiError } from '@/lib/api-response'
 import { uploadLimiter } from '@/lib/rate-limit-instances'
 import { createServiceClient } from '@/lib/supabase/server'
-import { parseSwedbank } from '@/lib/bank/parse-swedbank'
+import { parseBank } from '@/lib/bank/parsers'
 import { matchTransactions } from '@/lib/bank/match'
 
 export async function POST(request: Request) {
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     // Parse Excel
     const buffer = await file.arrayBuffer()
-    const transactions = parseSwedbank(buffer)
+    const { transactions } = parseBank(buffer)
 
     if (transactions.length === 0) {
       return apiError('Inga transaktioner hittades i filen', 400)
@@ -58,6 +58,7 @@ export async function POST(request: Request) {
       amount: m.transaction.amount,
       balance: m.transaction.balance,
       matched_document_id: m.matched_document_id,
+      match_confidence: m.match_confidence,
       import_batch_id: batchId,
     }))
 
