@@ -92,4 +92,30 @@ describe('matching logic', () => {
       expect(score).toBeGreaterThan(0)
     })
   })
+
+  describe('edge cases', () => {
+    it('handles empty strings', () => {
+      // Empty strings normalize to same value, so exact match returns 1
+      expect(similarity('', '')).toBe(1)
+    })
+
+    it('handles single-character names', () => {
+      // Single chars normalize to same value, so exact match returns 1
+      expect(similarity('A', 'A')).toBe(1)
+    })
+
+    it('handles names with only filler words', () => {
+      expect(similarity('AB', 'Inc')).toBe(0)
+    })
+
+    it('handles Swedish company names with different suffixes', () => {
+      const score = similarity('Volvo Group AB (publ)', 'Volvo Group')
+      expect(score).toBeGreaterThanOrEqual(0.7)
+    })
+
+    it('handles partial overlap', () => {
+      const score = similarity('Stockholm Energi AB', 'Energi Stockholm')
+      expect(score).toBeGreaterThanOrEqual(0.7)
+    })
+  })
 })
