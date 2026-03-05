@@ -15,6 +15,7 @@ const navItems = [
   { href: '/kunder', label: 'Kunder', icon: '👥' },
   { href: '/leverantorer', label: 'Leverantörer', icon: '🏢' },
   { href: '/kategorier', label: 'Kategorier', icon: '🏷️' },
+  { href: '/installningar', label: 'Inställningar', icon: '⚙️' },
 ]
 
 export default function Sidebar() {
