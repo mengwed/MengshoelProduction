@@ -102,6 +102,7 @@ export interface BankTransaction {
   amount: number
   balance: number | null
   matched_document_id: string | null
+  match_confidence: number | null
   import_batch_id: string
   created_at: string
   // Joined fields
@@ -149,6 +150,37 @@ export interface CategoryInput {
   name: string
   description?: string
   emoji?: string
+}
+
+export interface CompanySettings {
+  id: number
+  company_name: string
+  organization_type: string
+  owner_name: string | null
+  industry: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CompanySettingsInput {
+  company_name: string
+  organization_type: string
+  owner_name?: string | null
+  industry?: string | null
+  notes?: string | null
+}
+
+export interface AILog {
+  id: number
+  document_id: string | null
+  model: string
+  prompt_tokens: number | null
+  completion_tokens: number | null
+  duration_ms: number | null
+  raw_response: Record<string, unknown> | null
+  error: string | null
+  created_at: string
 }
 
 export interface AIExtractionResult {
