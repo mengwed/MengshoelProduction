@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Sidebar from '@/components/Sidebar'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 export default async function AppLayout({
   children,
@@ -18,7 +19,9 @@ export default async function AppLayout({
     <div className="flex min-h-screen bg-gray-950">
       <Sidebar />
       <main className="flex-1 ml-64 p-8">
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </main>
     </div>
   )
