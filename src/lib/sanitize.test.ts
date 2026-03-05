@@ -40,4 +40,30 @@ describe('sanitizeObject', () => {
     })
     expect(result.counterpart_name).toBe('Safe Name')
   })
+
+  it('works with typed objects (not just Record)', () => {
+    interface AIResult {
+      type: string
+      counterpart_name: string | null
+      confidence: number
+    }
+    const input: AIResult = {
+      type: '<b>invoice</b>',
+      counterpart_name: '<script>x</script>Test',
+      confidence: 95,
+    }
+    const result = sanitizeObject(input)
+    expect(result.type).toBe('invoice')
+    expect(result.counterpart_name).toBe('xTest')
+    expect(result.confidence).toBe(95)
+  })
+
+  it('preserves null values in objects', () => {
+    const result = sanitizeObject({
+      name: 'Test',
+      note: null as string | null,
+    })
+    expect(result.name).toBe('Test')
+    expect(result.note).toBe(null)
+  })
 })

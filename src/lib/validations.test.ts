@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { customerSchema, supplierSchema, categorySchema, documentUpdateSchema } from './validations'
+import { customerSchema, supplierSchema, categorySchema, documentUpdateSchema, validateBody } from './validations'
 
 describe('customerSchema', () => {
   it('accepts valid customer', () => {
@@ -65,5 +65,34 @@ describe('documentUpdateSchema', () => {
   it('accepts amount as number', () => {
     const result = documentUpdateSchema.safeParse({ amount: 1500.50 })
     expect(result.success).toBe(true)
+  })
+})
+
+describe('validateBody', () => {
+  it('returns data on valid input', () => {
+    const result = validateBody(customerSchema, { name: 'Test AB' })
+    expect('data' in result).toBe(true)
+    if ('data' in result) {
+      expect(result.data.name).toBe('Test AB')
+    }
+  })
+
+  it('returns error Response on invalid input', async () => {
+    const result = validateBody(customerSchema, { name: '' })
+    expect('error' in result).toBe(true)
+    if ('error' in result) {
+      expect(result.error.status).toBe(400)
+      const body = await result.error.json()
+      expect(body.error).toContain('name')
+    }
+  })
+
+  it('returns error with field path for nested validation', async () => {
+    const result = validateBody(customerSchema, { name: 'Test', email: 'invalid' })
+    expect('error' in result).toBe(true)
+    if ('error' in result) {
+      const body = await result.error.json()
+      expect(body.error).toContain('email')
+    }
   })
 })
