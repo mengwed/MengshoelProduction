@@ -49,10 +49,20 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetch('/api/customers').then(r => r.json()).then(setCustomers)
-    fetch('/api/suppliers').then(r => r.json()).then(setSuppliers)
-    fetch('/api/categories').then(r => r.json()).then(setCategories)
-    fetch(`/api/documents/${doc.id}/pdf-url`).then(r => r.json()).then(d => setPdfUrl(d.url)).catch(() => {})
+    fetch('/api/customers').then(r => r.json()).then(d => setCustomers(d.data ?? d))
+    fetch('/api/suppliers').then(r => r.json()).then(d => setSuppliers(d.data ?? d))
+    fetch('/api/categories').then(r => r.json()).then(d => setCategories(d.data ?? d))
+    fetch(`/api/documents/${doc.id}/pdf-url`)
+      .then(r => r.json())
+      .then(d => {
+        const url = d.data?.url ?? d.url
+        if (url) {
+          setPdfUrl(url)
+        } else {
+          setPdfUrl('error')
+        }
+      })
+      .catch(() => setPdfUrl('error'))
   }, [doc.id])
 
   async function handleSave() {
@@ -116,8 +126,12 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
         <div className="flex flex-1 min-h-0">
           {/* PDF viewer */}
           <div className="w-1/2 border-r border-gray-800 bg-gray-900">
-            {pdfUrl ? (
-              <iframe src={pdfUrl} className="w-full h-full" />
+            {pdfUrl === 'error' ? (
+              <div className="flex items-center justify-center h-full text-red-400">
+                Kunde inte ladda PDF
+              </div>
+            ) : pdfUrl ? (
+              <iframe src={pdfUrl} className="w-full h-full" title="Document PDF" />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-600">
                 Laddar PDF...
