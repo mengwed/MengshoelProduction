@@ -20,14 +20,14 @@ export default function SuppliersPage() {
 
   async function fetchSuppliers() {
     const res = await fetch('/api/suppliers')
-    const data = await res.json()
-    setSuppliers(data)
+    const json = await res.json()
+    setSuppliers(json.data ?? json)
   }
 
   async function fetchCategories() {
     const res = await fetch('/api/categories')
-    const data = await res.json()
-    setCategories(data)
+    const json = await res.json()
+    setCategories(json.data ?? json)
   }
 
   async function handleSave(input: SupplierInput) {

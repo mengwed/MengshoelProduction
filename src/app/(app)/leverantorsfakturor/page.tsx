@@ -12,8 +12,8 @@ export default function LeverantörsfakturorPage() {
 
   async function fetchDocuments() {
     const res = await fetch('/api/documents?type=incoming')
-    const data = await res.json()
-    setDocuments(data)
+    const json = await res.json()
+    setDocuments(json.data ?? json)
   }
 
   useEffect(() => { fetchDocuments() }, [])

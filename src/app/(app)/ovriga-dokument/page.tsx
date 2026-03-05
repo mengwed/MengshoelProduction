@@ -12,8 +12,8 @@ export default function OvrigaDokumentPage() {
 
   async function fetchDocuments() {
     const res = await fetch('/api/documents?type=other')
-    const data = await res.json()
-    setDocuments(data)
+    const json = await res.json()
+    setDocuments(json.data ?? json)
   }
 
   useEffect(() => { fetchDocuments() }, [])

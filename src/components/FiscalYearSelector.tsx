@@ -16,7 +16,8 @@ export default function FiscalYearSelector() {
   function fetchYears() {
     fetch('/api/fiscal-years')
       .then(r => r.json())
-      .then((data: FiscalYear[]) => {
+      .then((json) => {
+        const data: FiscalYear[] = json.data ?? json
         setYears(data)
         const active = data.find(y => y.is_active)
         if (active) setActiveId(active.id)

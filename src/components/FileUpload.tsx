@@ -32,24 +32,24 @@ export default function FileUpload({ typeHint, onUploadComplete }: Props) {
         body: formData,
       })
 
-      const data = await res.json()
+      const json = await res.json()
 
       if (res.status === 409) {
         setResults((prev) =>
           prev.map((r) =>
-            r.file === file ? { ...r, status: 'duplicate', error: data.message } : r
+            r.file === file ? { ...r, status: 'duplicate', error: json.error ?? json.message } : r
           )
         )
       } else if (!res.ok) {
         setResults((prev) =>
           prev.map((r) =>
-            r.file === file ? { ...r, status: 'error', error: data.error } : r
+            r.file === file ? { ...r, status: 'error', error: json.error } : r
           )
         )
       } else {
         setResults((prev) =>
           prev.map((r) =>
-            r.file === file ? { ...r, status: 'done', document: data } : r
+            r.file === file ? { ...r, status: 'done', document: json.data ?? json } : r
           )
         )
       }

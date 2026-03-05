@@ -28,7 +28,8 @@ export default function LinkedDocuments({ filterParam, filterId }: Props) {
 
   async function fetchDocs() {
     const res = await fetch(`/api/documents?${filterParam}=${filterId}`)
-    const data = await res.json()
+    const json = await res.json()
+    const data = json.data ?? json
     if (Array.isArray(data)) setDocuments(data)
     setLoading(false)
   }

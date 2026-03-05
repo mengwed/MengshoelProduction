@@ -20,7 +20,8 @@ export default function BankavstämningPage() {
 
   async function fetchTransactions() {
     const res = await fetch('/api/bank/transactions')
-    const data = await res.json()
+    const json = await res.json()
+    const data = json.data ?? json
     if (Array.isArray(data)) setTransactions(data)
   }
 
@@ -35,7 +36,8 @@ export default function BankavstämningPage() {
     formData.append('file', file)
 
     const res = await fetch('/api/bank/import', { method: 'POST', body: formData })
-    const data = await res.json()
+    const json = await res.json()
+    const data = json.data ?? json
 
     if (res.ok) {
       setImportResult(data)

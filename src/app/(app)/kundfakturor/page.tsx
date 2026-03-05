@@ -12,8 +12,8 @@ export default function KundfakturorPage() {
 
   async function fetchDocuments() {
     const res = await fetch('/api/documents?type=outgoing')
-    const data = await res.json()
-    setDocuments(data)
+    const json = await res.json()
+    setDocuments(json.data ?? json)
   }
 
   useEffect(() => { fetchDocuments() }, [])

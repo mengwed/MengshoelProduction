@@ -100,9 +100,10 @@ export default function DashboardPage() {
   const [reviewDocs, setReviewDocs] = useState<Document[]>([])
 
   useEffect(() => {
-    fetch('/api/dashboard').then(r => r.json()).then(setStats)
+    fetch('/api/dashboard').then(r => r.json()).then(d => setStats(d.data ?? d))
     fetch('/api/documents?needsReview=true').then(r => r.json()).then(d => {
-      if (Array.isArray(d)) setReviewDocs(d)
+      const docs = d.data ?? d
+      if (Array.isArray(docs)) setReviewDocs(docs)
     })
   }, [])
 

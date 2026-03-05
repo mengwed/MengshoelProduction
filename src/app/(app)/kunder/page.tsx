@@ -18,8 +18,8 @@ export default function CustomersPage() {
 
   async function fetchCustomers() {
     const res = await fetch('/api/customers')
-    const data = await res.json()
-    setCustomers(data)
+    const json = await res.json()
+    setCustomers(json.data ?? json)
   }
 
   async function handleSave(input: CustomerInput) {

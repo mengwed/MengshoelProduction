@@ -32,6 +32,12 @@
 - [x] Gora felmeddelanden konsekvent format over alla API-routes
 - [ ] Lagg till bra felmeddelanden for anvandaren vid misslyckade operationer
 
+## HOGT - Uppfoljning fran security-hardening
+
+- [x] Uppdatera alla frontend-sidor att hantera nytt API-responsformat `{ data: ... }` (apiSuccess wrapper)
+- [ ] Kor Supabase-migrationer i produktion (001_unique_constraints.sql, 002_audit_log.sql)
+- [x] Verifiera att DocumentPanel fungerar korrekt med `{ data: { url } }` fran pdf-url endpoint
+
 ## MEDEL - Kodkvalitet
 
 - [ ] Extrahera formatDate() och formatAmount() till src/lib/format.ts (duplicerad i 4+ komponenter)
