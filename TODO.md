@@ -49,19 +49,19 @@
 
 ## MEDEL - AI-forbattringar
 
-- [ ] Gora AI-prompten dynamisk (hardkodad for "Mengshoel Production" i prompt.ts rad 1)
-- [ ] Inkludera senaste ai_corrections automatiskt i extraktions-prompten
-- [ ] Validera att AI-extraherade belopp ar rimliga (t.ex. < 1 miljard SEK)
-- [ ] Lagg till loggning av alla AI-interaktioner for debugging
-- [ ] Hantera AI-fel battre - koa for retry istallet for att skapa tomt dokument
+- [x] Gora AI-prompten dynamisk (hardkodad for "Mengshoel Production" i prompt.ts rad 1)
+- [x] Inkludera senaste ai_corrections automatiskt i extraktions-prompten
+- [x] Validera att AI-extraherade belopp ar rimliga (t.ex. < 1 miljard SEK)
+- [x] Lagg till loggning av alla AI-interaktioner for debugging
+- [x] Hantera AI-fel battre - koa for retry istallet for att skapa tomt dokument
 
 ## MEDEL - Bankavstamning
 
-- [ ] Forbattra matchningsalgoritm - lagg till konfidenspoang istallet for binart resultat
-- [ ] Lagg till stod for fler banker (inte bara Swedbank)
-- [ ] Lagg till manuell matchning/avlankning av transaktioner
-- [ ] Lagg till duplikatdetektering for transaktioner
-- [ ] Lagg till saldoverifering
+- [x] Forbattra matchningsalgoritm - lagg till konfidenspoang istallet for binart resultat
+- [x] Lagg till stod for fler banker (inte bara Swedbank)
+- [x] Lagg till manuell matchning/avlankning av transaktioner
+- [x] Lagg till duplikatdetektering for transaktioner
+- [x] Lagg till saldoverifering
 
 ## MEDEL - Tillganglighet
 
@@ -80,9 +80,9 @@
 
 ## LAGT - Nya funktioner (framtida)
 
-- [ ] Sokfunktion - fulltext-sokning over dokument
+- [x] Sokfunktion - fulltext-sokning over dokument
 - [ ] Betalningsuppfoljning - paminnelser for obetalda fakturor
-- [ ] Automatisk kategorisering baserat pa leverantor
+- [x] Automatisk kategorisering baserat pa leverantor
 - [ ] Finansiella rapporter (resultatrakning, balansrakning, momsrapport)
 - [ ] Stod for flera valutor
 - [ ] Fakturagenerering - skapa PDF-fakturor
