@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { logout } from '@/app/login/actions'
+import FiscalYearSelector from '@/components/FiscalYearSelector'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: '📊' },
@@ -50,6 +51,11 @@ export default function Sidebar() {
           )
         })}
       </nav>
+
+      <div className="px-3 pb-2">
+        <label className="block text-xs text-gray-500 mb-1 px-1">Rakenskapsar</label>
+        <FiscalYearSelector />
+      </div>
 
       <div className="p-3 border-t border-gray-800">
         <form action={logout}>
