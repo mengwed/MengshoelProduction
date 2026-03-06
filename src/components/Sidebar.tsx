@@ -1,8 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { logout } from '@/app/login/actions'
 import FiscalYearSelector from '@/components/FiscalYearSelector'
 
@@ -18,11 +19,11 @@ const navItems = [
   { href: '/installningar', label: 'Inställningar', icon: '⚙️' },
 ]
 
-export default function Sidebar() {
+function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 h-screen bg-gray-950 border-r border-gray-800 flex flex-col fixed left-0 top-0">
+    <>
       <div className="p-6">
         <img src="/icon.svg" alt="AJ" className="w-10 h-10" />
       </div>
@@ -34,6 +35,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
                 isActive
                   ? 'text-white'
@@ -70,6 +72,65 @@ export default function Sidebar() {
           </button>
         </form>
       </div>
-    </aside>
+    </>
+  )
+}
+
+export default function Sidebar() {
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-64 h-screen bg-gray-950 border-r border-gray-800 flex-col fixed left-0 top-0">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-gray-950 border-b border-gray-800 flex items-center justify-between px-4 h-14">
+        <img src="/icon.svg" alt="AJ" className="w-8 h-8" />
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="text-gray-400 hover:text-white p-2"
+          aria-label="Öppna meny"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="md:hidden fixed inset-0 bg-black/60 z-50"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
+              className="md:hidden fixed left-0 top-0 bottom-0 w-64 bg-gray-950 border-r border-gray-800 z-50 flex flex-col"
+            >
+              <SidebarContent onNavClick={() => setMobileOpen(false)} />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
