@@ -39,7 +39,7 @@ TYPBESTAMNING (6 typer):
    - Skatteverket-beslut, F-skatt, arbetsgivaravgifter
    - counterpart_name ska vara myndighetens namn
 4. loan_statement: ENBART laneaviseringar (amortering + ranta pa bolan/billan)
-5. credit_card_statement: ENBART kontoutdrag med FLERA transaktioner listade
+5. credit_card_statement: ENBART bank-/kreditkortsutdrag fran en BANK med FLERA transaktioner listade pa samma dokument. Om dokumentet sager "FAKTURA" eller har EN specifik leverantor/avsandare ar det INTE ett kontoutdrag - da ar det incoming_invoice.
 6. other: Ovrigt som inte passar ovan, t.ex.:
    - Fondtransaktioner, pensionssparande, vardepapperstransaktioner
    - Kontoutdrag fran vardepappersbolag
