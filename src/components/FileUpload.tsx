@@ -19,12 +19,21 @@ export default function FileUpload({ typeHint, onUploadComplete }: Props) {
   const [results, setResults] = useState<UploadResult[]>([])
   const [isDragging, setIsDragging] = useState(false)
 
-  const uploadFile = useCallback(async (file: File) => {
-    setResults((prev) => [...prev, { file, status: 'uploading' }])
+  const uploadFile = useCallback(async (file: File, force = false) => {
+    setResults((prev) => {
+      const existing = prev.findIndex(r => r.file === file)
+      if (existing >= 0) {
+        const updated = [...prev]
+        updated[existing] = { ...updated[existing], status: 'uploading', error: undefined }
+        return updated
+      }
+      return [...prev, { file, status: 'uploading' }]
+    })
 
     const formData = new FormData()
     formData.append('file', file)
     if (typeHint) formData.append('typeHint', typeHint)
+    if (force) formData.append('force', 'true')
 
     try {
       let res: Response
@@ -132,11 +141,24 @@ export default function FileUpload({ typeHint, onUploadComplete }: Props) {
             </span>
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm truncate">{r.file.name}</p>
-              {r.error && <p className="text-red-400 text-xs">{r.error}</p>}
+              {r.status === 'duplicate' && (
+                <p className="text-yellow-400 text-xs">Filen finns redan importerad</p>
+              )}
+              {r.status === 'error' && r.error && (
+                <p className="text-red-400 text-xs">{r.error}</p>
+              )}
               {r.status === 'uploading' && (
                 <p className="text-gray-500 text-xs">Analyserar med AI...</p>
               )}
             </div>
+            {r.status === 'duplicate' && (
+              <button
+                onClick={() => uploadFile(r.file, true)}
+                className="px-3 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors shrink-0"
+              >
+                Importera ändå
+              </button>
+            )}
           </motion.div>
         ))}
       </AnimatePresence>

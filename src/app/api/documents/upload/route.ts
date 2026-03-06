@@ -30,6 +30,7 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const typeHint = formData.get('typeHint') as string | null
+    const force = formData.get('force') === 'true'
 
     if (!file) {
       return apiError('No file provided', 400)
@@ -46,15 +47,17 @@ export async function POST(request: Request) {
       return apiError('No active fiscal year', 400)
     }
 
-    // Check for duplicate
-    const { data: existing } = await supabase
-      .from('documents')
-      .select('id, file_name')
-      .eq('file_name', file.name)
-      .limit(1)
+    // Check for duplicate (skip if force=true)
+    if (!force) {
+      const { data: existing } = await supabase
+        .from('documents')
+        .select('id, file_name')
+        .eq('file_name', file.name)
+        .limit(1)
 
-    if (existing && existing.length > 0) {
-      return apiError(`En fil med namnet "${file.name}" finns redan`, 409)
+      if (existing && existing.length > 0) {
+        return apiError(`En fil med namnet "${file.name}" finns redan`, 409)
+      }
     }
 
     // Upload to Supabase Storage
