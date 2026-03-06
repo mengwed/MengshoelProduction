@@ -127,7 +127,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
-        className="absolute inset-4 top-8 bg-gray-950 border border-gray-800 rounded-2xl overflow-hidden flex flex-col"
+        className="absolute inset-0 md:inset-4 md:top-8 bg-gray-950 md:border md:border-gray-800 md:rounded-2xl overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 shrink-0">
@@ -136,9 +136,9 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
         </div>
 
         {/* Body: PDF left, form right */}
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-col md:flex-row flex-1 min-h-0">
           {/* PDF viewer */}
-          <div className="w-1/2 border-r border-gray-800 bg-gray-900">
+          <div className="hidden md:block w-1/2 border-r border-gray-800 bg-gray-900">
             {pdfUrl === 'error' ? (
               <div className="flex items-center justify-center h-full text-red-400">
                 Kunde inte ladda PDF
@@ -153,7 +153,19 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
           </div>
 
           {/* Form */}
-          <div className="w-1/2 overflow-y-auto p-6">
+          <div className="flex-1 md:w-1/2 overflow-y-auto p-4 md:p-6">
+            {/* Mobile PDF button */}
+            {pdfUrl && pdfUrl !== 'error' && (
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="md:hidden mb-4 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-300 text-sm hover:bg-gray-700 transition-colors"
+              >
+                📄 Visa PDF
+              </a>
+            )}
+
             {doc.ai_needs_review && doc.ai_extracted_data && (() => {
               const reasons = (doc.ai_extracted_data as Record<string, unknown>).review_reasons as string[] | undefined
               return (
@@ -170,7 +182,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
               )
             })()}
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Typ</label>
                 <select value={type} onChange={(e) => setType(e.target.value as DocumentType)} className={inputClass}>
@@ -241,7 +253,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={handleSave}
                 disabled={saving}
