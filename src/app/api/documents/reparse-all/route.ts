@@ -137,6 +137,11 @@ export async function POST() {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         results.push({ id: doc.id, file_name: doc.file_name, success: false, error: msg })
+
+        // If first document fails with auth error, abort early
+        if (results.length === 1 && (msg.includes('authentication') || msg.includes('invalid x-api-key') || msg.includes('401'))) {
+          return apiSuccess({ reparsed: 0, total: documents.length, results, error: 'invalid_api_key' })
+        }
       }
     }
 

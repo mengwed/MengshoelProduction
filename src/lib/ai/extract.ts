@@ -161,6 +161,11 @@ export async function extractFromPDF(
         error: lastError.message,
       })
 
+      // Don't retry auth errors — they won't resolve
+      if (lastError.message.includes('authentication') || lastError.message.includes('invalid x-api-key')) {
+        throw lastError
+      }
+
       if (attempt < MAX_RETRIES) {
         console.warn(`AI extraction attempt ${attempt + 1} failed, retrying...`, lastError.message)
       }
