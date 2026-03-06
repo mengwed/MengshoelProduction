@@ -24,18 +24,20 @@ Ibland skapar KUNDEN (t.ex. SVT, UR, TV4) fakturadokumentet at ${company_name}. 
 - Stora medieforetag (SVT, UR, TV4) star som dokumentskapare men ${company_name} ar mottagare av betalningen
 -> Dessa ska vara type = "outgoing_invoice", counterpart_name = kundens namn (t.ex. "Sveriges Television AB")
 
+VIKTIG REGEL - BEFINTLIGA LEVERANTORER:
+Om counterpart_name matchar en BEFINTLIG LEVERANTOR (se listan langst ner), ska type ALLTID vara "incoming_invoice". Befintliga leverantorer ar redan klassificerade av anvandaren.
+
 TYPBESTAMNING (6 typer):
 1. outgoing_invoice: ${company_name} fakturerar en kund, eller en sjalvfaktura dar ${company_name} far betalt
 2. incoming_invoice: ALLT som ${company_name} betalar for. Inkluderar:
    - Leverantorsfakturor (Fortnox, InExchange, etc.)
    - Kvitton (parkering, mat, programvara, etc.)
    - Abonnemang (telefon, forsakring, etc.)
+   - Trangselskatt, fordonsskatt och andra avgifter fran Transportstyrelsen
    - Alla andra kostnader dar ${company_name} betalar
-3. government_fee: Myndighetsavgifter OCH myndighetsaterbetalningar. Inkluderar:
-   - Trangselskatt (aven aterbetalning av trangselskatt)
-   - Fordonsskatt
-   - Utbetalningsspecifikationer fran Transportstyrelsen, Skatteverket etc.
-   - counterpart_name ska vara myndighetens namn (t.ex. "Transportstyrelsen")
+3. government_fee: ENBART myndighetsavgifter som INTE kommer fran en befintlig leverantor:
+   - Skatteverket-beslut, F-skatt, arbetsgivaravgifter
+   - counterpart_name ska vara myndighetens namn
 4. loan_statement: ENBART laneaviseringar (amortering + ranta pa bolan/billan)
 5. credit_card_statement: ENBART kontoutdrag med FLERA transaktioner listade
 6. other: Ovrigt som inte passar ovan, t.ex.:
