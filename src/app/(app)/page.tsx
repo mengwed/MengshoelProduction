@@ -170,6 +170,8 @@ function GlobalSearch() {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardData | null>(null)
   const [reviewDocs, setReviewDocs] = useState<Document[]>([])
+  const [dismissedAnomalies, setDismissedAnomalies] = useState<Set<string>>(new Set())
+  const [dismissedMissing, setDismissedMissing] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetch('/api/dashboard').then(r => r.json()).then(d => setStats(d.data ?? d))
@@ -177,7 +179,29 @@ export default function DashboardPage() {
       const docs = d.data ?? d
       if (Array.isArray(docs)) setReviewDocs(docs)
     })
+    try {
+      const da = localStorage.getItem('dismissed_anomalies')
+      const dm = localStorage.getItem('dismissed_missing')
+      if (da) setDismissedAnomalies(new Set(JSON.parse(da)))
+      if (dm) setDismissedMissing(new Set(JSON.parse(dm)))
+    } catch {}
   }, [])
+
+  function dismissAnomaly(key: string) {
+    setDismissedAnomalies(prev => {
+      const next = new Set(prev).add(key)
+      localStorage.setItem('dismissed_anomalies', JSON.stringify([...next]))
+      return next
+    })
+  }
+
+  function dismissMissing(key: string) {
+    setDismissedMissing(prev => {
+      const next = new Set(prev).add(key)
+      localStorage.setItem('dismissed_missing', JSON.stringify([...next]))
+      return next
+    })
+  }
 
   if (!stats) {
     return (
@@ -215,21 +239,29 @@ export default function DashboardPage() {
       {(stats.anomalies.length > 0 || stats.missing_recurring.length > 0 || reviewDocs.length > 0) && (
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Anomalies */}
-          {stats.anomalies.length > 0 && (
+          {stats.anomalies.filter(a => !dismissedAnomalies.has(a.message)).length > 0 && (
             <div className="bg-gray-900 border border-orange-500/30 rounded-xl p-6">
               <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                 <span className="text-orange-400">🔍</span> Ovanliga belopp
               </h2>
               <div className="space-y-2">
-                {stats.anomalies.map((a, i) => (
+                {stats.anomalies.filter(a => !dismissedAnomalies.has(a.message)).map((a, i) => (
                   <motion.div
-                    key={i}
+                    key={a.message}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
                     transition={{ delay: i * 0.05 }}
-                    className="p-3 bg-orange-500/5 border border-orange-500/20 rounded-lg"
+                    className="p-3 bg-orange-500/5 border border-orange-500/20 rounded-lg flex items-center justify-between gap-2"
                   >
                     <p className="text-orange-300 text-sm">{a.message}</p>
+                    <button
+                      onClick={() => dismissAnomaly(a.message)}
+                      className="text-gray-600 hover:text-gray-300 transition-colors shrink-0 p-1"
+                      title="Dölj"
+                    >
+                      ✕
+                    </button>
                   </motion.div>
                 ))}
               </div>
@@ -237,22 +269,30 @@ export default function DashboardPage() {
           )}
 
           {/* Missing recurring */}
-          {stats.missing_recurring.length > 0 && (
+          {stats.missing_recurring.filter(m => !dismissedMissing.has(m.message)).length > 0 && (
             <div className="bg-gray-900 border border-blue-500/30 rounded-xl p-6">
               <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                 <span className="text-blue-400">📅</span> Saknade fakturor
               </h2>
               <p className="text-gray-500 text-xs mb-3">Återkommande leverantörer utan nylig faktura</p>
               <div className="space-y-2">
-                {stats.missing_recurring.map((m, i) => (
+                {stats.missing_recurring.filter(m => !dismissedMissing.has(m.message)).map((m, i) => (
                   <motion.div
-                    key={i}
+                    key={m.message}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
                     transition={{ delay: i * 0.05 }}
-                    className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg"
+                    className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg flex items-center justify-between gap-2"
                   >
                     <p className="text-blue-300 text-sm">{m.message}</p>
+                    <button
+                      onClick={() => dismissMissing(m.message)}
+                      className="text-gray-600 hover:text-gray-300 transition-colors shrink-0 p-1"
+                      title="Dölj"
+                    >
+                      ✕
+                    </button>
                   </motion.div>
                 ))}
               </div>

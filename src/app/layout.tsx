@@ -9,7 +9,9 @@ export const metadata: Metadata = {
   description: 'Bokföring som inte suger',
   icons: {
     icon: '/icon.svg',
+    apple: '/apple-touch-icon.png',
   },
+  manifest: '/manifest.json',
   robots: {
     index: false,
     follow: false,

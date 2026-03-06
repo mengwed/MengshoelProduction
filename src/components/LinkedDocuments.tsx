@@ -66,8 +66,8 @@ export default function LinkedDocuments({ filterParam, filterId }: Props) {
           <thead>
             <tr className="bg-gray-800/30">
               <th className="text-left px-3 py-2 text-xs text-gray-500 uppercase">Datum</th>
+              <th className="text-left px-3 py-2 text-xs text-gray-500 uppercase">Leverantör / Kund</th>
               <th className="text-left px-3 py-2 text-xs text-gray-500 uppercase">Typ</th>
-              <th className="text-left px-3 py-2 text-xs text-gray-500 uppercase">Fakturanr</th>
               <th className="text-right px-3 py-2 text-xs text-gray-500 uppercase">Belopp</th>
               <th className="text-right px-3 py-2 text-xs text-gray-500 uppercase">Moms</th>
             </tr>
@@ -79,9 +79,9 @@ export default function LinkedDocuments({ filterParam, filterId }: Props) {
                 onClick={() => setSelectedDoc(doc)}
                 className="border-t border-gray-800/30 hover:bg-gray-800/20 transition-colors cursor-pointer"
               >
-                <td className="px-3 py-2 text-gray-300 text-sm">{formatDate(doc.invoice_date)}</td>
-                <td className="px-3 py-2 text-gray-400 text-sm">{TYPE_LABELS[doc.type] || doc.type}</td>
-                <td className="px-3 py-2 text-gray-400 text-sm">{doc.invoice_number || '-'}</td>
+                <td className="px-3 py-2 text-gray-300 text-sm whitespace-nowrap">{formatDate(doc.invoice_date)}</td>
+                <td className="px-3 py-2 text-white text-sm">{doc.supplier_name || doc.customer_name || '-'}</td>
+                <td className="px-3 py-2 text-gray-400 text-sm whitespace-nowrap">{TYPE_LABELS[doc.type] || doc.type}</td>
                 <td className="px-3 py-2 text-white text-sm text-right font-mono">{formatAmount(doc.total ?? doc.amount)}</td>
                 <td className="px-3 py-2 text-gray-400 text-sm text-right font-mono">{formatAmount(doc.vat)}</td>
               </tr>

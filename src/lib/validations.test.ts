@@ -37,6 +37,21 @@ describe('supplierSchema', () => {
     const result = supplierSchema.safeParse({ name: 'Supplier AB', category_id: null })
     expect(result.success).toBe(true)
   })
+
+  it('accepts is_active boolean', () => {
+    const result = supplierSchema.safeParse({ name: 'Supplier AB', is_active: false })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts supplier without is_active', () => {
+    const result = supplierSchema.safeParse({ name: 'Supplier AB' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects non-boolean is_active', () => {
+    const result = supplierSchema.safeParse({ name: 'Supplier AB', is_active: 'yes' })
+    expect(result.success).toBe(false)
+  })
 })
 
 describe('categorySchema', () => {

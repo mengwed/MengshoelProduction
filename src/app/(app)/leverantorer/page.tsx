@@ -14,6 +14,7 @@ export default function SuppliersPage() {
   const [editing, setEditing] = useState<Supplier | null>(null)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [showInactive, setShowInactive] = useState(false)
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
@@ -28,8 +29,8 @@ export default function SuppliersPage() {
     fetchCategories()
   }, [])
 
-  async function fetchSuppliers() {
-    const res = await fetch('/api/suppliers')
+  async function fetchSuppliers(inactive = showInactive) {
+    const res = await fetch(`/api/suppliers${inactive ? '?filter=inactive' : ''}`)
     const json = await res.json()
     setSuppliers(json.data ?? json)
   }
@@ -59,6 +60,15 @@ export default function SuppliersPage() {
     fetchSuppliers()
   }
 
+  async function handleToggleActive(supplier: Supplier) {
+    await fetch(`/api/suppliers/${supplier.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: supplier.name, is_active: !supplier.is_active }),
+    })
+    fetchSuppliers()
+  }
+
   async function handleDelete(id: number) {
     if (!confirm('Ta bort denna leverantör?')) return
     await fetch(`/api/suppliers/${id}`, { method: 'DELETE' })
@@ -69,12 +79,28 @@ export default function SuppliersPage() {
     <div>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <h1 className="text-2xl font-bold text-white">Leverantörer</h1>
-        <button
-          onClick={() => { setEditing(null); setShowForm(true) }}
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all text-sm font-medium"
-        >
-          + Ny leverantör
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              const next = !showInactive
+              setShowInactive(next)
+              fetchSuppliers(next)
+            }}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              showInactive
+                ? 'bg-gray-700 text-white'
+                : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white'
+            }`}
+          >
+            {showInactive ? 'Dölj inaktiva' : 'Visa inaktiva'}
+          </button>
+          <button
+            onClick={() => { setEditing(null); setShowForm(true) }}
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all text-sm font-medium"
+          >
+            + Ny leverantör
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -86,6 +112,7 @@ export default function SuppliersPage() {
             className="mb-8 p-6 bg-gray-900 border border-gray-800 rounded-xl"
           >
             <EntityForm
+              key={editing?.id ?? 'new'}
               entity={editing ?? undefined}
               type="supplier"
               categories={categories}
@@ -104,16 +131,22 @@ export default function SuppliersPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.03 }}
-              className="p-4 bg-gray-900 border border-gray-800 rounded-xl"
+              className={`p-4 bg-gray-900 border border-gray-800 rounded-xl ${!supplier.is_active ? 'opacity-50' : ''}`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-white font-medium">{supplier.name}</span>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => { setEditing(supplier); setShowForm(false) }}
+                    onClick={() => { setEditing(supplier); setShowForm(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                     className="text-xs text-gray-400"
                   >
                     Redigera
+                  </button>
+                  <button
+                    onClick={() => handleToggleActive(supplier)}
+                    className="text-xs text-gray-400"
+                  >
+                    {supplier.is_active ? 'Inaktivera' : 'Aktivera'}
                   </button>
                   <button
                     onClick={() => handleDelete(supplier.id)}
@@ -151,7 +184,7 @@ export default function SuppliersPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer group"
+                  className={`border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer group ${!supplier.is_active ? 'opacity-50' : ''}`}
                   onClick={() => setExpandedId(expandedId === supplier.id ? null : supplier.id)}
                 >
                   <td className="px-4 py-3 text-white font-medium">
@@ -177,10 +210,16 @@ export default function SuppliersPage() {
                   <td className="px-4 py-3 text-gray-400">{supplier.email || '-'}</td>
                   <td className="px-4 py-3 text-right">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setEditing(supplier); setShowForm(false) }}
+                      onClick={(e) => { e.stopPropagation(); setEditing(supplier); setShowForm(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                       className="text-xs text-gray-400 hover:text-white mr-3"
                     >
                       Redigera
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleToggleActive(supplier) }}
+                      className="text-xs text-gray-400 hover:text-white mr-3"
+                    >
+                      {supplier.is_active ? 'Inaktivera' : 'Aktivera'}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(supplier.id) }}

@@ -77,6 +77,7 @@ export default function CustomersPage() {
             className="mb-8 p-6 bg-gray-900 border border-gray-800 rounded-xl"
           >
             <EntityForm
+              key={editing?.id ?? 'new'}
               entity={editing ?? undefined}
               type="customer"
               onSave={(data) => handleSave(data as CustomerInput)}
@@ -100,7 +101,7 @@ export default function CustomersPage() {
                 <span className="text-white font-medium">{customer.name}</span>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => { setEditing(customer); setShowForm(false) }}
+                    onClick={() => { setEditing(customer); setShowForm(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                     className="text-xs text-gray-400"
                   >
                     Redigera
@@ -155,7 +156,7 @@ export default function CustomersPage() {
                   <td className="px-4 py-3 text-gray-400">{customer.city || '-'}</td>
                   <td className="px-4 py-3 text-right">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setEditing(customer); setShowForm(false) }}
+                      onClick={(e) => { e.stopPropagation(); setEditing(customer); setShowForm(false); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                       className="text-xs text-gray-400 hover:text-white mr-3"
                     >
                       Redigera

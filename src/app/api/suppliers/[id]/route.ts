@@ -21,6 +21,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       .single()
 
     if (error) return apiError(error.message, 500)
+
+    // Update category on all linked documents when supplier category changes
+    if ('category_id' in validated.data) {
+      await supabase
+        .from('documents')
+        .update({ category_id: validated.data.category_id })
+        .eq('supplier_id', id)
+    }
+
     return apiSuccess(data)
   } catch (e) {
     return handleApiError(e)

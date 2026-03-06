@@ -20,7 +20,20 @@ export default function FiscalYearSelector() {
         const data: FiscalYear[] = json.data ?? json
         setYears(data)
         const active = data.find(y => y.is_active)
-        if (active) setActiveId(active.id)
+        if (active) {
+          setActiveId(active.id)
+        } else {
+          // No year is active — default to current year if it exists
+          const currentYearEntry = data.find(y => y.year === new Date().getFullYear())
+          if (currentYearEntry) {
+            setActiveId(currentYearEntry.id)
+            fetch('/api/fiscal-years', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ year_id: currentYearEntry.id }),
+            })
+          }
+        }
       })
   }
 

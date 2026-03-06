@@ -3,14 +3,25 @@ import { apiSuccess, apiError, handleApiError } from '@/lib/api-response'
 import { supplierSchema, validateBody } from '@/lib/validations'
 import { createServiceClient } from '@/lib/supabase/server'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await requireAuth()
     const supabase = createServiceClient()
-    const { data, error } = await supabase
+    const { searchParams } = new URL(request.url)
+    const filter = searchParams.get('filter')
+
+    let query = supabase
       .from('suppliers')
       .select('*, categories(name, emoji)')
       .order('name')
+
+    if (filter === 'inactive') {
+      query = query.eq('is_active', false)
+    } else {
+      query = query.neq('is_active', false)
+    }
+
+    const { data, error } = await query
 
     if (error) return apiError(error.message, 500)
 

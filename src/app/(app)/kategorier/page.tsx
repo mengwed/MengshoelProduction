@@ -80,11 +80,12 @@ export default function CategoriesPage() {
         {categories.map((cat, i) => (
           <motion.div
             key={cat.id}
+            layout
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
             className={`p-4 bg-gray-900 border rounded-xl transition-colors cursor-pointer group ${
-              expandedId === cat.id ? 'border-purple-500/50' : 'border-gray-800 hover:border-gray-700'
+              expandedId === cat.id ? 'border-purple-500/50 col-span-full' : 'border-gray-800 hover:border-gray-700'
             }`}
             onClick={() => setExpandedId(expandedId === cat.id ? null : cat.id)}
           >

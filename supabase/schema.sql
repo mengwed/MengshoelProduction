@@ -39,6 +39,7 @@ CREATE TABLE suppliers (
   email TEXT,
   phone TEXT,
   category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

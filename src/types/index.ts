@@ -47,6 +47,7 @@ export interface Supplier {
   email: string | null
   phone: string | null
   category_id: number | null
+  is_active: boolean
   category_name?: string
   category_emoji?: string
   created_at: string

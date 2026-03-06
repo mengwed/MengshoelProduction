@@ -20,6 +20,7 @@ export const supplierSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().max(30).optional(),
   category_id: z.number().int().positive().nullable().optional(),
+  is_active: z.boolean().optional(),
 })
 
 export const categorySchema = z.object({
