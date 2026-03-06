@@ -7,6 +7,18 @@ export async function GET(request: NextRequest) {
   try {
     await requireAuth()
     const supabase = createServiceClient()
+
+    // Look up active fiscal year to filter documents
+    const { data: fiscalYear } = await supabase
+      .from('fiscal_years')
+      .select('id')
+      .eq('is_active', true)
+      .single()
+
+    if (!fiscalYear) {
+      return apiError('No active fiscal year', 400)
+    }
+
     const searchParams = request.nextUrl.searchParams
     const type = searchParams.get('type')
     const month = searchParams.get('month')
@@ -26,6 +38,7 @@ export async function GET(request: NextRequest) {
         categories(name, emoji)
       `)
       .order('invoice_date', { ascending: false })
+      .eq('fiscal_year_id', fiscalYear.id)
 
     if (type === 'outgoing') {
       query = query.eq('type', 'outgoing_invoice')
