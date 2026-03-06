@@ -13,11 +13,11 @@ export async function POST() {
     await requireAuth()
     const supabase = createServiceClient()
 
-    // Find documents that need reparsing: 0 confidence or missing critical data
+    // Find documents that need reparsing: 0 confidence, missing data, or misclassified types
     const { data: documents, error: queryError } = await supabase
       .from('documents')
       .select('*')
-      .or('ai_confidence.eq.0,ai_confidence.is.null,invoice_date.is.null')
+      .or('ai_confidence.eq.0,ai_confidence.is.null,invoice_date.is.null,type.eq.other,type.eq.government_fee')
       .order('created_at', { ascending: false })
 
     if (queryError) return apiError(queryError.message, 500)
