@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Document } from '@/types'
 import DocumentPanel from '@/components/DocumentPanel'
@@ -29,6 +29,9 @@ const STATUS_LABELS: Record<string, string> = {
   paid: 'Betald',
 }
 
+type SortKey = 'date' | 'type' | 'name' | 'invoice_number' | 'amount' | 'vat' | 'category' | 'status' | 'ai'
+type SortDir = 'asc' | 'desc'
+
 interface Props {
   documents: Document[]
   onUpdate: () => void
@@ -36,6 +39,48 @@ interface Props {
 
 export default function DocumentList({ documents, onUpdate }: Props) {
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
+  const [sortKey, setSortKey] = useState<SortKey>('date')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDir(key === 'date' ? 'desc' : 'asc')
+    }
+  }
+
+  const sorted = useMemo(() => {
+    const mult = sortDir === 'asc' ? 1 : -1
+    return [...documents].sort((a, b) => {
+      switch (sortKey) {
+        case 'date':
+          return mult * ((a.invoice_date ?? '').localeCompare(b.invoice_date ?? ''))
+        case 'type':
+          return mult * ((TYPE_LABELS[a.type] ?? a.type).localeCompare(TYPE_LABELS[b.type] ?? b.type))
+        case 'name': {
+          const nameA = a.customer_name || a.supplier_name || ''
+          const nameB = b.customer_name || b.supplier_name || ''
+          return mult * nameA.localeCompare(nameB)
+        }
+        case 'invoice_number':
+          return mult * ((a.invoice_number ?? '').localeCompare(b.invoice_number ?? ''))
+        case 'amount':
+          return mult * ((a.amount ?? 0) - (b.amount ?? 0))
+        case 'vat':
+          return mult * ((a.vat ?? 0) - (b.vat ?? 0))
+        case 'category':
+          return mult * ((a.category_name ?? '').localeCompare(b.category_name ?? ''))
+        case 'status':
+          return mult * (a.status.localeCompare(b.status))
+        case 'ai':
+          return mult * ((a.ai_confidence ?? 0) - (b.ai_confidence ?? 0))
+        default:
+          return 0
+      }
+    })
+  }, [documents, sortKey, sortDir])
 
   function formatDate(date: string | null) {
     if (!date) return '-'
@@ -52,25 +97,44 @@ export default function DocumentList({ documents, onUpdate }: Props) {
     }).format(amount)
   }
 
+  function SortHeader({ label, col, align }: { label: string; col: SortKey; align?: 'right' | 'center' }) {
+    const active = sortKey === col
+    return (
+      <th
+        className={`px-4 py-3 text-xs uppercase tracking-wider cursor-pointer select-none group transition-colors hover:text-gray-200 ${
+          align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
+        } ${active ? 'text-purple-400' : 'text-gray-400'}`}
+        onClick={() => handleSort(col)}
+      >
+        <span className="inline-flex items-center gap-1">
+          {label}
+          <span className={`transition-opacity ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`}>
+            {sortDir === 'asc' || !active ? '▲' : '▼'}
+          </span>
+        </span>
+      </th>
+    )
+  }
+
   return (
     <>
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-800">
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Datum</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Typ</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Kund/Leverantör</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Fakturanr</th>
-              <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Belopp</th>
-              <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Moms</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Kategori</th>
-              <th className="text-center px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="text-center px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">AI</th>
+              <SortHeader label="Datum" col="date" />
+              <SortHeader label="Typ" col="type" />
+              <SortHeader label="Kund/Leverantör" col="name" />
+              <SortHeader label="Fakturanr" col="invoice_number" />
+              <SortHeader label="Belopp" col="amount" align="right" />
+              <SortHeader label="Moms" col="vat" align="right" />
+              <SortHeader label="Kategori" col="category" />
+              <SortHeader label="Status" col="status" align="center" />
+              <SortHeader label="AI" col="ai" align="center" />
             </tr>
           </thead>
           <tbody>
-            {documents.map((doc, i) => (
+            {sorted.map((doc, i) => (
               <motion.tr
                 key={doc.id}
                 initial={{ opacity: 0 }}

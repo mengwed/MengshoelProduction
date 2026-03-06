@@ -25,7 +25,9 @@ export default function CategoryPicker({ value, onChange, size = 'sm' }: Categor
   const [newName, setNewName] = useState('')
   const [newEmoji, setNewEmoji] = useState('')
   const ref = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const emojiButtonRef = useRef<HTMLButtonElement>(null)
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; openUp: boolean }>({ top: 0, left: 0, openUp: false })
 
   function loadCategories() {
     getCategories().then(setCategories)
@@ -36,10 +38,16 @@ export default function CategoryPicker({ value, onChange, size = 'sm' }: Categor
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-        setCreating(false)
+      const target = e.target as Node
+      // Check if click is inside the trigger button or any portal dropdown
+      if (ref.current?.contains(target)) return
+      const portals = document.querySelectorAll('[data-category-picker-portal]')
+      for (const portal of portals) {
+        if (portal.contains(target)) return
       }
+      setOpen(false)
+      setCreating(false)
+      setShowEmojiPicker(false)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -70,12 +78,26 @@ export default function CategoryPicker({ value, onChange, size = 'sm' }: Categor
   return (
     <div ref={ref} className="relative">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen(!open) }}
-        className={`${textSize} px-2 py-1 rounded-lg border transition-colors ${
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!open && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect()
+            const spaceBelow = window.innerHeight - rect.bottom
+            const openUp = spaceBelow < 350
+            setDropdownPos({
+              top: openUp ? rect.top : rect.bottom + 4,
+              left: rect.left,
+              openUp,
+            })
+          }
+          setOpen(!open)
+        }}
+        className={`${textSize} px-2.5 py-1 rounded-full transition-all ${
           selected
-            ? 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
-            : 'border-dashed border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-400'
+            ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25'
+            : 'border border-dashed border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-400'
         }`}
       >
         {selected ? (
@@ -85,10 +107,18 @@ export default function CategoryPicker({ value, onChange, size = 'sm' }: Categor
         )}
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
-          className="absolute z-50 top-full mt-1 left-0 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-xl overflow-hidden"
+          data-category-picker-portal
+          className="fixed z-[9998] w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-xl overflow-hidden"
+          style={{
+            left: dropdownPos.left,
+            ...(dropdownPos.openUp
+              ? { bottom: window.innerHeight - dropdownPos.top + 4 }
+              : { top: dropdownPos.top }),
+          }}
           onClick={e => e.stopPropagation()}
+          onMouseDown={e => e.stopPropagation()}
         >
           {value && (
             <button
@@ -137,6 +167,7 @@ export default function CategoryPicker({ value, onChange, size = 'sm' }: Categor
                 </div>
                 {showEmojiPicker && createPortal(
                   <div
+                    data-category-picker-portal
                     className="fixed z-[9999]"
                     style={{
                       top: emojiButtonRef.current
@@ -192,7 +223,8 @@ export default function CategoryPicker({ value, onChange, size = 'sm' }: Categor
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

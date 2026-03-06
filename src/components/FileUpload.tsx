@@ -27,10 +27,20 @@ export default function FileUpload({ typeHint, onUploadComplete }: Props) {
     if (typeHint) formData.append('typeHint', typeHint)
 
     try {
-      const res = await fetch('/api/documents/upload', {
-        method: 'POST',
-        body: formData,
-      })
+      let res: Response
+      let retries = 0
+      while (true) {
+        res = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        if (res.status === 429 && retries < 3) {
+          retries++
+          await new Promise(r => setTimeout(r, 2000 * retries))
+          continue
+        }
+        break
+      }
 
       const json = await res.json()
 

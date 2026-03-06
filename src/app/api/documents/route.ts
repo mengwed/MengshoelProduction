@@ -64,9 +64,22 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       const term = `%${search}%`
-      query = query.or(
-        `file_name.ilike.${term},invoice_number.ilike.${term},suppliers.name.ilike.${term},customers.name.ilike.${term}`
-      )
+
+      // Find matching supplier/customer IDs first
+      const [{ data: matchingSuppliers }, { data: matchingCustomers }] = await Promise.all([
+        supabase.from('suppliers').select('id').ilike('name', term),
+        supabase.from('customers').select('id').ilike('name', term),
+      ])
+
+      const orFilters = [`file_name.ilike.${term}`, `invoice_number.ilike.${term}`]
+      if (matchingSuppliers?.length) {
+        orFilters.push(`supplier_id.in.(${matchingSuppliers.map(s => s.id).join(',')})`)
+      }
+      if (matchingCustomers?.length) {
+        orFilters.push(`customer_id.in.(${matchingCustomers.map(c => c.id).join(',')})`)
+      }
+
+      query = query.or(orFilters.join(','))
     }
 
     const { data, error } = await query

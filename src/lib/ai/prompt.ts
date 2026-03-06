@@ -24,16 +24,24 @@ Ibland skapar KUNDEN (t.ex. SVT, UR, TV4) fakturadokumentet at ${company_name}. 
 - Stora medieforetag (SVT, UR, TV4) star som dokumentskapare men ${company_name} ar mottagare av betalningen
 -> Dessa ska vara type = "outgoing_invoice", counterpart_name = kundens namn (t.ex. "Sveriges Television AB")
 
-TYPBESTAMNING (bara 4 typer):
+TYPBESTAMNING (6 typer):
 1. outgoing_invoice: ${company_name} fakturerar en kund, eller en sjalvfaktura dar ${company_name} far betalt
 2. incoming_invoice: ALLT som ${company_name} betalar for. Inkluderar:
    - Leverantorsfakturor (Fortnox, InExchange, etc.)
-   - Myndighetsavgifter (Transportstyrelsen, Skatteverket - trangselskatt, fordonsskatt, etc.)
    - Kvitton (parkering, mat, programvara, etc.)
    - Abonnemang (telefon, forsakring, etc.)
-   - Alla andra kostnader
-3. loan_statement: ENBART laneaviseringar (amortering + ranta pa bolan/billan)
-4. credit_card_statement: ENBART kontoutdrag med FLERA transaktioner listade
+   - Alla andra kostnader dar ${company_name} betalar
+3. government_fee: Myndighetsavgifter OCH myndighetsaterbetalningar. Inkluderar:
+   - Trangselskatt (aven aterbetalning av trangselskatt)
+   - Fordonsskatt
+   - Utbetalningsspecifikationer fran Transportstyrelsen, Skatteverket etc.
+   - counterpart_name ska vara myndighetens namn (t.ex. "Transportstyrelsen")
+4. loan_statement: ENBART laneaviseringar (amortering + ranta pa bolan/billan)
+5. credit_card_statement: ENBART kontoutdrag med FLERA transaktioner listade
+6. other: Ovrigt som inte passar ovan, t.ex.:
+   - Fondtransaktioner, pensionssparande, vardepapperstransaktioner
+   - Kontoutdrag fran vardepappersbolag
+   - counterpart_name ska vara forvaltarens/bankens namn
 
 Om du ar osaker mellan incoming_invoice och en annan typ: valj incoming_invoice.
 
@@ -42,18 +50,31 @@ MOTPART (counterpart_name):
 - For incoming_invoice: Ange LEVERANTORENS/MYNDIGHETENS namn (den ${company_name} betalar)
 - Anvand det fullstandiga foretagsnamnet, t.ex. "Sveriges Television AB" (inte "SVT Leverantorsfakturor"), "Transportstyrelsen" (inte "TSM")
 
-MOMSREGLER:
-- Extrahera BARA moms om den tydligt framgar i dokumentet
+BELOPP OCH MOMSREGLER:
+- Extrahera ALLTID belopp (amount) nar det framgar i dokumentet, aven for myndighetsavgifter, aterbetalningar, fondinsattningar etc.
+- For dokument UTAN moms (myndighetsavgifter, fondinsattningar, lanaviseringar): satt amount = totalbeloppet, vat = null, vat_rate = null, total = samma som amount
+- For dokument MED moms: amount = exkl moms, vat = momsbelopp, total = inkl moms
 - Myndighetsavgifter (trangselskatt, fordonsskatt) har ALDRIG moms
 - Laneaviseringar har ALDRIG moms
-- Om moms inte tydligt framgar, satt vat och vat_rate till null
 - GISSA ALDRIG momsbelopp
+- Om dokumentet visar "Totalt" eller "Belopp kr": anvand det som amount/total
+
+DATUM:
+- Extrahera ALLTID datum (invoice_date) nar det framgar i dokumentet
+- Sok efter "Datum", "Fakturadatum", "Utskriftsdatum", "Period" etc.
+- Anvand dokumentets datum, INTE perioden som avses (t.ex. for en mobilfaktura daterad 2025-01-01 som avser december 2024, anvand 2025-01-01)
+
+LEVERANTOR/MOTPART:
+- Identifiera ALLTID counterpart_name. Las av logotyp, sidhuvud, avsandare, foretags- eller myndighetsnamn.
+- For telefonoperatorer: anvand varumarket (t.ex. "Hallon" istallet for "HI3G Access AB")
+- For myndigheter: anvand det kanda namnet (t.ex. "Transportstyrelsen")
+- For fondbolag: anvand forvaltarens namn (t.ex. "Max Matthiessen")
 
 For kontoutdrag (credit_card_statement): extrahera VARJE transaktion som en separat rad i "lines".
 
 Svara ENBART med giltig JSON (ingen markdown, inga kodblock) i detta format:
 {
-  "type": "outgoing_invoice|incoming_invoice|loan_statement|credit_card_statement",
+  "type": "outgoing_invoice|incoming_invoice|government_fee|loan_statement|credit_card_statement|other",
   "invoice_number": "fakturanummer eller null",
   "invoice_date": "YYYY-MM-DD eller null",
   "due_date": "YYYY-MM-DD eller null",

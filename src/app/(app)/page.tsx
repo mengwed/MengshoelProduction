@@ -108,7 +108,11 @@ function GlobalSearch() {
     const timer = setTimeout(() => {
       fetch(`/api/documents?search=${encodeURIComponent(query)}`)
         .then(r => r.json())
-        .then(d => setResults((d.data ?? d).slice(0, 8)))
+        .then(d => {
+          const docs = d.data ?? d
+          setResults(Array.isArray(docs) ? docs.slice(0, 8) : [])
+        })
+        .catch(() => setResults([]))
     }, 300)
     return () => clearTimeout(timer)
   }, [query])
