@@ -34,7 +34,7 @@ function makeChainableMock(resolvedData: unknown = docData) {
   const terminal = vi.fn().mockResolvedValue({ data: resolvedData, error: null })
   // Create a chainable mock where every method returns the same proxy
   const chain: Record<string, any> = {}
-  const methods = ['select', 'order', 'eq', 'in', 'gte', 'lte', 'or', 'limit', 'single']
+  const methods = ['select', 'order', 'eq', 'in', 'gte', 'lte', 'or', 'limit', 'single', 'ilike']
   for (const method of methods) {
     chain[method] = vi.fn().mockReturnValue(chain)
   }
@@ -110,10 +110,14 @@ describe('GET /api/documents', () => {
     expect(chain.eq).toHaveBeenCalledWith('type', 'incoming_invoice')
   })
 
-  it('applies search filter with ilike', async () => {
-    const { chain } = mockSupabase()
+  it('applies search filter with supplier/customer lookup', async () => {
+    const { chain, mock } = mockSupabase()
     await GET(makeRequest('search=fortnox'))
 
+    // Should look up matching suppliers and customers
+    expect(mock.from).toHaveBeenCalledWith('suppliers')
+    expect(mock.from).toHaveBeenCalledWith('customers')
+    // Should apply or filter with file_name and invoice_number ilike patterns
     expect(chain.or).toHaveBeenCalledWith(
       expect.stringContaining('%fortnox%')
     )
