@@ -6,6 +6,7 @@ import SummaryBoxes from '@/components/SummaryBoxes'
 import DocumentList from '@/components/DocumentList'
 import FileUpload from '@/components/FileUpload'
 import SearchInput from '@/components/SearchInput'
+import ReparseAllButton from '@/components/ReparseAllButton'
 
 export default function OvrigaDokumentPage() {
   const [documents, setDocuments] = useState<Document[]>([])
@@ -30,7 +31,8 @@ export default function OvrigaDokumentPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-white">Övriga dokument</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <ReparseAllButton onComplete={fetchDocuments} />
           <SearchInput onSearch={setSearchQuery} placeholder="Sök dokument..." />
           <a
             href="/api/documents/export?type=other"
