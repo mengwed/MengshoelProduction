@@ -104,6 +104,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       }
     }
 
+    // Auto-assign category from supplier if available
+    let categoryId: number | null = doc.category_id
+    if (supplierId && !categoryId) {
+      const { data: supplierData } = await supabase
+        .from('suppliers')
+        .select('category_id')
+        .eq('id', supplierId)
+        .single()
+      if (supplierData?.category_id) {
+        categoryId = supplierData.category_id
+      }
+    }
+
     // Update document with new AI results
     const { data: updated, error: updateError } = await supabase
       .from('documents')
@@ -118,6 +131,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         total: aiResult.total,
         customer_id: customerId,
         supplier_id: supplierId,
+        category_id: categoryId,
         ai_extracted_data: aiResult as unknown as Record<string, unknown>,
         ai_confidence: aiResult.confidence,
         ai_needs_review: aiResult.needs_review,
