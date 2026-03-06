@@ -163,14 +163,43 @@ export default function FileUpload({ typeHint, onUploadComplete }: Props) {
         ))}
       </AnimatePresence>
 
-      {allDone && results.length > 0 && (
-        <button
-          onClick={() => setResults([])}
-          className="text-sm text-gray-400 hover:text-white transition-colors"
-        >
-          Rensa lista
-        </button>
-      )}
+      {allDone && results.length > 0 && (() => {
+        const succeeded = results.filter(r => r.status === 'done').length
+        const failed = results.filter(r => r.status === 'error' || r.status === 'duplicate')
+        return (
+          <div className="p-4 bg-gray-900 border border-gray-800 rounded-xl space-y-3">
+            <p className="text-white text-sm font-medium">
+              {succeeded} av {results.length} filer importerades
+            </p>
+            {failed.length > 0 && (
+              <div>
+                <p className="text-red-400 text-xs font-medium mb-1">Ej importerade:</p>
+                <ul className="space-y-1">
+                  {failed.map((r, i) => (
+                    <li key={i} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400 truncate mr-2">{r.file.name} — {r.status === 'duplicate' ? 'finns redan' : r.error}</span>
+                      {r.status === 'duplicate' && (
+                        <button
+                          onClick={() => uploadFile(r.file, true)}
+                          className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded hover:bg-yellow-500/30 transition-colors shrink-0"
+                        >
+                          Importera ändå
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <button
+              onClick={() => setResults([])}
+              className="text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              Rensa lista
+            </button>
+          </div>
+        )
+      })()}
     </div>
   )
 }
