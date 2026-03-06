@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SummaryBoxes from '@/components/SummaryBoxes'
 import type { BankTransaction } from '@/types'
@@ -34,6 +34,15 @@ export default function BankavstamningPage() {
   const [matchingTxId, setMatchingTxId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchDoc[]>([])
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    setIsMobile(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   useEffect(() => {
     fetchTransactions()
@@ -131,8 +140,8 @@ export default function BankavstamningPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-white">Bankavstamning</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <h1 className="text-2xl font-bold text-white">Bankavstämning</h1>
         <button
           onClick={() => setShowUpload(!showUpload)}
           className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all text-sm font-medium"
@@ -250,78 +259,139 @@ export default function BankavstamningPage() {
         )}
       </AnimatePresence>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-800">
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Datum</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Typ</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Referens</th>
-              <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Belopp</th>
-              <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Saldo</th>
-              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Matchat dokument</th>
-              <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((tx, i) => (
-              <motion.tr
-                key={tx.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: i * 0.02 }}
-                className={`border-b border-gray-800/50 transition-colors ${
-                  tx.matched_document_id
-                    ? 'hover:bg-green-500/5'
-                    : 'hover:bg-red-500/5'
-                }`}
-              >
-                <td className="px-4 py-3 text-gray-300 text-sm">{formatDate(tx.booking_date)}</td>
-                <td className="px-4 py-3 text-gray-400 text-sm">{tx.transaction_type || '-'}</td>
-                <td className="px-4 py-3 text-gray-400 text-sm truncate max-w-xs">{tx.reference || '-'}</td>
-                <td className={`px-4 py-3 text-sm text-right font-mono ${tx.amount >= 0 ? 'text-green-400' : 'text-white'}`}>
+      {isMobile ? (
+        <div className="space-y-3">
+          {filtered.map((tx, i) => (
+            <motion.div
+              key={tx.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: i * 0.02 }}
+              className={`p-4 bg-gray-900 border rounded-xl ${
+                tx.matched_document_id ? 'border-green-500/20' : 'border-gray-800'
+              }`}
+            >
+              <div className="flex items-start justify-between mb-1">
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <span>{formatDate(tx.booking_date)}</span>
+                  <span>{tx.transaction_type || '-'}</span>
+                </div>
+                <span className={`text-sm font-mono ${tx.amount >= 0 ? 'text-green-400' : 'text-white'}`}>
                   {formatAmount(tx.amount)}
-                </td>
-                <td className="px-4 py-3 text-gray-500 text-sm text-right font-mono">
-                  {tx.balance != null ? formatAmount(tx.balance) : '-'}
-                </td>
-                <td className="px-4 py-3 text-sm">
+                </span>
+              </div>
+              {tx.reference && (
+                <p className="text-gray-400 text-xs truncate mb-2">{tx.reference}</p>
+              )}
+              <div className="flex items-center justify-between">
+                <div className="text-sm">
                   {tx.documents ? (
-                    <span className="text-green-400">
+                    <span className="text-green-400 text-xs">
                       {tx.documents.file_name}
                       {confidenceBadge(tx.match_confidence)}
                     </span>
                   ) : (
-                    <span className="text-red-400/60">Inget kvitto</span>
+                    <span className="text-red-400/60 text-xs">Inget kvitto</span>
                   )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {tx.matched_document_id ? (
-                    <button
-                      onClick={() => handleUnlink(tx.id)}
-                      className="text-xs text-red-400 hover:text-red-300"
-                    >
-                      Avlanka
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setMatchingTxId(tx.id)}
-                      className="text-xs text-purple-400 hover:text-purple-300"
-                    >
-                      Matcha
-                    </button>
-                  )}
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 && (
-          <p className="text-center text-gray-500 py-8">
-            {transactions.length === 0 ? 'Inga transaktioner importerade' : 'Inga transaktioner matchar filtret'}
-          </p>
-        )}
-      </div>
+                </div>
+                {tx.matched_document_id ? (
+                  <button
+                    onClick={() => handleUnlink(tx.id)}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    Avlänka
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setMatchingTxId(tx.id)}
+                    className="text-xs text-purple-400 hover:text-purple-300"
+                  >
+                    Matcha
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          ))}
+          {filtered.length === 0 && (
+            <p className="text-center text-gray-500 py-8">
+              {transactions.length === 0 ? 'Inga transaktioner importerade' : 'Inga transaktioner matchar filtret'}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-800">
+                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Datum</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Typ</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Referens</th>
+                <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Belopp</th>
+                <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Saldo</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Matchat dokument</th>
+                <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((tx, i) => (
+                <motion.tr
+                  key={tx.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.02 }}
+                  className={`border-b border-gray-800/50 transition-colors ${
+                    tx.matched_document_id
+                      ? 'hover:bg-green-500/5'
+                      : 'hover:bg-red-500/5'
+                  }`}
+                >
+                  <td className="px-4 py-3 text-gray-300 text-sm">{formatDate(tx.booking_date)}</td>
+                  <td className="px-4 py-3 text-gray-400 text-sm">{tx.transaction_type || '-'}</td>
+                  <td className="px-4 py-3 text-gray-400 text-sm truncate max-w-xs">{tx.reference || '-'}</td>
+                  <td className={`px-4 py-3 text-sm text-right font-mono ${tx.amount >= 0 ? 'text-green-400' : 'text-white'}`}>
+                    {formatAmount(tx.amount)}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-sm text-right font-mono">
+                    {tx.balance != null ? formatAmount(tx.balance) : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {tx.documents ? (
+                      <span className="text-green-400">
+                        {tx.documents.file_name}
+                        {confidenceBadge(tx.match_confidence)}
+                      </span>
+                    ) : (
+                      <span className="text-red-400/60">Inget kvitto</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {tx.matched_document_id ? (
+                      <button
+                        onClick={() => handleUnlink(tx.id)}
+                        className="text-xs text-red-400 hover:text-red-300"
+                      >
+                        Avlänka
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setMatchingTxId(tx.id)}
+                        className="text-xs text-purple-400 hover:text-purple-300"
+                      >
+                        Matcha
+                      </button>
+                    )}
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && (
+            <p className="text-center text-gray-500 py-8">
+              {transactions.length === 0 ? 'Inga transaktioner importerade' : 'Inga transaktioner matchar filtret'}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
