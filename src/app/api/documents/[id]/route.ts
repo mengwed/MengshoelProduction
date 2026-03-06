@@ -91,9 +91,29 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       }
     }
 
+    // Auto-reassign fiscal year when invoice_date changes
+    const updateData = { ...validated.data }
+    const newDate = updateData.invoice_date ?? current?.invoice_date
+    if (newDate) {
+      const invoiceYear = parseInt(newDate.slice(0, 4), 10)
+      const currentFYYear = current?.fiscal_year_id
+        ? (await supabase.from('fiscal_years').select('year').eq('id', current.fiscal_year_id).single()).data?.year
+        : null
+      if (currentFYYear && invoiceYear !== currentFYYear) {
+        const { data: matchingFY } = await supabase
+          .from('fiscal_years')
+          .select('id')
+          .eq('year', invoiceYear)
+          .single()
+        if (matchingFY) {
+          updateData.fiscal_year_id = matchingFY.id
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from('documents')
-      .update(validated.data)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()

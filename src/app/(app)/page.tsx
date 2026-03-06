@@ -25,6 +25,11 @@ interface MonthlyBreakdown {
   expenses: number
 }
 
+interface InvoiceWarning {
+  type: 'gap' | 'duplicate'
+  message: string
+}
+
 interface DashboardData {
   income: number
   income_vat: number
@@ -32,10 +37,13 @@ interface DashboardData {
   expenses_vat: number
   result: number
   vat_to_pay: number
+  vat_payments: number
+  vat_paid_marked: number
   document_count: number
   needs_review_count: number
   anomalies: Anomaly[]
   missing_recurring: MissingRecurring[]
+  invoice_warnings: InvoiceWarning[]
   monthly_breakdown: MonthlyBreakdown[]
 }
 
@@ -168,6 +176,7 @@ function GlobalSearch() {
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [stats, setStats] = useState<DashboardData | null>(null)
   const [reviewDocs, setReviewDocs] = useState<Document[]>([])
   const [dismissedAnomalies, setDismissedAnomalies] = useState<Set<string>>(new Set())
@@ -219,13 +228,36 @@ export default function DashboardPage() {
         <GlobalSearch />
       </div>
 
+      {/* Invoice number warnings — shown prominently at the top */}
+      {stats.invoice_warnings.length > 0 && (
+        <div className="space-y-3 mb-6">
+          {stats.invoice_warnings.map((w) => (
+            <motion.div
+              key={w.message}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="p-5 bg-red-500/10 border-2 border-red-500/40 rounded-xl flex items-start gap-4"
+            >
+              <span className="text-3xl shrink-0">{w.type === 'duplicate' ? '⚠️' : '🚨'}</span>
+              <div>
+                <h3 className="text-red-300 font-bold text-base mb-1">
+                  {w.type === 'duplicate' ? 'Dubbletter i fakturanummer' : 'Lucka i fakturanummerserie'}
+                </h3>
+                <p className="text-red-200/80 text-sm leading-relaxed">{w.message}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
       <SummaryBoxes boxes={[
         { label: 'Intäkter', value: stats.income, icon: '💰' },
         { label: 'Utgående moms', value: stats.income_vat, icon: '🧾' },
         { label: 'Kostnader', value: stats.expenses, icon: '📦' },
         { label: 'Ingående moms', value: stats.expenses_vat, icon: '🧾' },
         { label: 'Resultat', value: stats.result, icon: '📊' },
-        { label: 'Moms att betala', value: stats.vat_to_pay, icon: '🏦' },
+        { label: 'Moms att betala', value: stats.vat_to_pay, icon: '🏦', subtitle: stats.vat_paid_marked > 0 ? `${formatSEK(stats.vat_paid_marked)} markerad som betald` : undefined },
+        { label: 'Inbetald moms', value: stats.vat_payments, icon: '💸', onClick: () => router.push('/ovriga-dokument?kategori=moms') },
       ]} />
 
       {/* Monthly chart */}

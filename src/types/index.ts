@@ -74,6 +74,7 @@ export interface Document {
   ai_extracted_data: Record<string, unknown> | null
   ai_confidence: number | null
   ai_needs_review: boolean
+  vat_paid: boolean
   status: DocumentStatus
   created_at: string
   // Joined fields

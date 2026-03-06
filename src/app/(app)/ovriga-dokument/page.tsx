@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import type { Document } from '@/types'
 import SummaryBoxes from '@/components/SummaryBoxes'
 import DocumentList from '@/components/DocumentList'
@@ -9,6 +10,10 @@ import SearchInput from '@/components/SearchInput'
 import ReparseAllButton from '@/components/ReparseAllButton'
 
 export default function OvrigaDokumentPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const kategoriFilter = searchParams.get('kategori')
+
   const [documents, setDocuments] = useState<Document[]>([])
   const [showUpload, setShowUpload] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -28,6 +33,13 @@ export default function OvrigaDokumentPage() {
   const receipts = documents.filter(d => d.type === 'receipt')
   const rest = documents.filter(d => !['government_fee', 'loan_statement', 'receipt'].includes(d.type))
   const needsReview = documents.filter(d => d.ai_needs_review).length
+
+  let displayDocs = documents
+  if (kategoriFilter) {
+    displayDocs = documents.filter(d => d.category_name?.toLowerCase() === kategoriFilter.toLowerCase())
+  } else if (filterReview) {
+    displayDocs = documents.filter(d => d.ai_needs_review)
+  }
 
   return (
     <div>
@@ -64,7 +76,21 @@ export default function OvrigaDokumentPage() {
         </div>
       )}
 
-      <DocumentList documents={filterReview ? documents.filter(d => d.ai_needs_review) : documents} onUpdate={fetchDocuments} />
+      {kategoriFilter && (
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-sm text-gray-400">
+            Filtrerar på kategori: <span className="text-white font-medium">{kategoriFilter}</span>
+          </span>
+          <button
+            onClick={() => router.push('/ovriga-dokument')}
+            className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+          >
+            Visa alla
+          </button>
+        </div>
+      )}
+
+      <DocumentList documents={displayDocs} onUpdate={fetchDocuments} />
     </div>
   )
 }

@@ -48,6 +48,8 @@ export const documentUpdateSchema = z.object({
   category_id: z.number().int().positive().nullable().optional(),
   payment_date: z.string().nullable().optional(),
   ai_needs_review: z.boolean().optional(),
+  vat_paid: z.boolean().optional(),
+  fiscal_year_id: z.number().int().positive().optional(),
 })
 
 export function validateBody<T>(schema: z.ZodSchema<T>, data: unknown): { data: T } | { error: ReturnType<typeof apiError> } {

@@ -262,12 +262,29 @@ export async function POST(request: Request) {
       }
     }
 
+    // Determine correct fiscal year based on invoice date
+    let targetFiscalYearId = fiscalYear.id
+    if (aiResult.invoice_date) {
+      const invoiceYear = parseInt(aiResult.invoice_date.slice(0, 4), 10)
+      if (invoiceYear !== fiscalYear.year) {
+        // Look for a fiscal year matching the invoice date
+        const { data: matchingFY } = await supabase
+          .from('fiscal_years')
+          .select('id')
+          .eq('year', invoiceYear)
+          .single()
+        if (matchingFY) {
+          targetFiscalYearId = matchingFY.id
+        }
+      }
+    }
+
     // Insert document
     const { data: doc, error: insertError } = await supabase
       .from('documents')
       .insert({
         type: aiResult.type,
-        fiscal_year_id: fiscalYear.id,
+        fiscal_year_id: targetFiscalYearId,
         customer_id: customerId,
         supplier_id: supplierId,
         linked_document_id: linkedDocumentId,

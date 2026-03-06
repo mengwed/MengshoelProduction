@@ -19,18 +19,20 @@ export async function GET() {
 
     const { data: documents } = await supabase
       .from('documents')
-      .select('type, amount, vat, total, ai_needs_review, invoice_date, supplier_id, customer_id, suppliers(name), customers(name)')
+      .select('type, amount, vat, vat_paid, total, ai_needs_review, invoice_date, invoice_number, supplier_id, customer_id, category_id, suppliers(name), customers(name), categories(name)')
       .eq('fiscal_year_id', fiscalYear.id)
 
     if (!documents) {
       return apiSuccess({
         income: 0, income_vat: 0, expenses: 0, expenses_vat: 0,
-        result: 0, vat_to_pay: 0, document_count: 0, needs_review_count: 0,
-        anomalies: [], missing_recurring: [], monthly_breakdown: [],
+        result: 0, vat_to_pay: 0, vat_payments: 0, vat_paid_marked: 0,
+        document_count: 0, needs_review_count: 0,
+        anomalies: [], missing_recurring: [], invoice_warnings: [], monthly_breakdown: [],
       })
     }
 
     let income = 0, incomeVat = 0, expenses = 0, expensesVat = 0, needsReviewCount = 0
+    let vatPayments = 0, vatPaidMarked = 0
 
     // Group by supplier for anomaly + recurring detection
     const supplierHistory: Record<number, { name: string; amounts: number[]; months: Set<string> }> = {}
@@ -40,23 +42,33 @@ export async function GET() {
       const amt = doc.amount ?? 0
       const vatAmt = doc.vat ?? 0
 
+      // Skip VAT payments (e.g. momsbetalning to Skatteverket) — these are not business expenses
+      const categoryName = (doc.categories as unknown as { name: string } | null)?.name?.toLowerCase() ?? ''
+      const isVatPayment = categoryName === 'moms'
+
       if (doc.type === 'outgoing_invoice') {
         income += amt
         incomeVat += vatAmt
+        if (doc.vat_paid) vatPaidMarked += vatAmt
+      } else if (isVatPayment) {
+        vatPayments += doc.total ?? amt
       } else {
         expenses += amt
         expensesVat += vatAmt
       }
       if (doc.ai_needs_review) needsReviewCount++
 
-      // Monthly breakdown
+      // Monthly breakdown (only include months within the fiscal year)
       if (doc.invoice_date) {
         const month = doc.invoice_date.slice(0, 7) // YYYY-MM
-        if (!monthlyData[month]) monthlyData[month] = { income: 0, expenses: 0 }
-        if (doc.type === 'outgoing_invoice') {
-          monthlyData[month].income += doc.total ?? amt
-        } else {
-          monthlyData[month].expenses += doc.total ?? amt
+        const docYear = parseInt(month.slice(0, 4), 10)
+        if (docYear === fiscalYear.year) {
+          if (!monthlyData[month]) monthlyData[month] = { income: 0, expenses: 0 }
+          if (doc.type === 'outgoing_invoice') {
+            monthlyData[month].income += doc.total ?? amt
+          } else if (!isVatPayment) {
+            monthlyData[month].expenses += doc.total ?? amt
+          }
         }
       }
 
@@ -112,6 +124,52 @@ export async function GET() {
       }
     }
 
+    // Detect issues in outgoing invoice number sequences
+    const invoiceWarnings: { type: 'gap' | 'duplicate'; message: string }[] = []
+    const outgoingInvoices = documents
+      .filter(d => d.type === 'outgoing_invoice' && d.invoice_number)
+    const outgoingNumberStrings = outgoingInvoices.map(d => d.invoice_number!)
+    const outgoingNumbers = outgoingNumberStrings
+      .filter(n => /^\d+$/.test(n))
+      .map(n => parseInt(n, 10))
+      .sort((a, b) => a - b)
+
+    // Detect duplicates
+    const countMap: Record<string, number> = {}
+    for (const num of outgoingNumberStrings) {
+      countMap[num] = (countMap[num] || 0) + 1
+    }
+    const duplicates = Object.entries(countMap)
+      .filter(([, count]) => count > 1)
+      .map(([num, count]) => `${num} (${count} st)`)
+    if (duplicates.length > 0) {
+      invoiceWarnings.push({
+        type: 'duplicate',
+        message: `Kundfakturanummer ${duplicates.join(', ')} finns flera gånger — kontrollera att det stämmer!`,
+      })
+    }
+
+    // Detect gaps
+    if (outgoingNumbers.length >= 2) {
+      const unique = [...new Set(outgoingNumbers)]
+      const missingNumbers: number[] = []
+      for (let i = 1; i < unique.length; i++) {
+        const prev = unique[i - 1]
+        const curr = unique[i]
+        if (curr - prev > 1 && curr - prev <= 10) {
+          for (let n = prev + 1; n < curr; n++) {
+            missingNumbers.push(n)
+          }
+        }
+      }
+      if (missingNumbers.length > 0) {
+        invoiceWarnings.push({
+          type: 'gap',
+          message: `Kundfaktura ${missingNumbers.join(', ')} saknas i nummerserien — har dessa skickats till revisorn?`,
+        })
+      }
+    }
+
     // Monthly breakdown sorted
     const monthly = Object.entries(monthlyData)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -124,10 +182,13 @@ export async function GET() {
       expenses_vat: expensesVat,
       result: income - expenses,
       vat_to_pay: incomeVat - expensesVat,
+      vat_payments: vatPayments,
+      vat_paid_marked: vatPaidMarked,
       document_count: documents.length,
       needs_review_count: needsReviewCount,
       anomalies,
       missing_recurring: missing,
+      invoice_warnings: invoiceWarnings,
       monthly_breakdown: monthly,
     })
   } catch (e) {

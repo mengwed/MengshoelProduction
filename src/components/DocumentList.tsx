@@ -153,6 +153,9 @@ export default function DocumentList({ documents, onUpdate }: Props) {
                   <span>{TYPE_LABELS[doc.type] || doc.type}</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  {doc.type === 'outgoing_invoice' && doc.vat_paid && (
+                    <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">Moms betald</span>
+                  )}
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[doc.status]}`}>
                     {STATUS_LABELS[doc.status]}
                   </span>
@@ -200,7 +203,12 @@ export default function DocumentList({ documents, onUpdate }: Props) {
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-sm">{doc.invoice_number || '-'}</td>
                   <td className="px-4 py-3 text-white text-sm text-right font-mono">{formatAmount(doc.amount)}</td>
-                  <td className="px-4 py-3 text-gray-400 text-sm text-right font-mono">{formatAmount(doc.vat)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="text-gray-400 text-sm font-mono">{formatAmount(doc.vat)}</span>
+                    {doc.type === 'outgoing_invoice' && doc.vat_paid && (
+                      <span className="ml-1.5 px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium whitespace-nowrap" title="Moms betald">Betald</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                     <CategoryPicker
                       value={doc.category_id}

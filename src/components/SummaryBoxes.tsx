@@ -8,6 +8,7 @@ interface Box {
   value: number
   icon: string
   format?: 'currency' | 'number'
+  subtitle?: string
   onClick?: () => void
   active?: boolean
 }
@@ -51,7 +52,7 @@ function AnimatedNumber({ value, format = 'currency' }: { value: number; format?
 
 export default function SummaryBoxes({ boxes }: Props) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+    <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 ${boxes.length <= 6 ? 'lg:grid-cols-6' : 'lg:grid-cols-7'}`}>
       {boxes.map((box, i) => (
         <motion.div
           key={box.label}
@@ -68,6 +69,9 @@ export default function SummaryBoxes({ boxes }: Props) {
           <p className="text-white text-xl font-bold mt-1">
             <AnimatedNumber value={box.value} format={box.format} />
           </p>
+          {box.subtitle && (
+            <p className="text-gray-500 text-[10px] mt-1 leading-tight">{box.subtitle}</p>
+          )}
         </motion.div>
       ))}
     </div>

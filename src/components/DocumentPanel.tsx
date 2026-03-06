@@ -41,6 +41,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
   const [supplierId, setSupplierId] = useState<number | null>(doc.supplier_id)
   const [categoryId, setCategoryId] = useState<number | null>(doc.category_id)
   const [paymentDate, setPaymentDate] = useState(doc.payment_date ?? '')
+  const [vatPaid, setVatPaid] = useState(doc.vat_paid ?? false)
 
   const [customers, setCustomers] = useState<Customer[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -85,6 +86,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
         supplier_id: supplierId,
         category_id: categoryId,
         payment_date: paymentDate || null,
+        vat_paid: vatPaid,
         ai_needs_review: false,
       }),
     })
@@ -252,6 +254,18 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
                 </select>
               </div>
             </div>
+
+            {isOutgoing && (
+              <label className="flex items-center gap-2 mb-6 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={vatPaid}
+                  onChange={(e) => setVatPaid(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">Har betalat moms</span>
+              </label>
+            )}
 
             <div className="flex flex-wrap gap-3">
               <button
