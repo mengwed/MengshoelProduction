@@ -47,6 +47,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
   const [categories, setCategories] = useState<Category[]>([])
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [reparsing, setReparsing] = useState(false)
 
   useEffect(() => {
     fetch('/api/customers').then(r => r.json()).then(d => setCustomers(d.data ?? d))
@@ -89,6 +90,18 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
     })
     setSaving(false)
     onUpdate()
+  }
+
+  async function handleReparse() {
+    setReparsing(true)
+    try {
+      const res = await fetch(`/api/documents/${doc.id}/reparse`, { method: 'POST' })
+      if (res.ok) {
+        onUpdate()
+      }
+    } finally {
+      setReparsing(false)
+    }
   }
 
   async function handleDelete() {
@@ -235,6 +248,13 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
                 className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all text-sm font-medium disabled:opacity-50"
               >
                 {saving ? 'Sparar...' : 'Spara'}
+              </button>
+              <button
+                onClick={handleReparse}
+                disabled={reparsing}
+                className="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-colors text-sm disabled:opacity-50"
+              >
+                {reparsing ? 'Analyserar...' : 'Analysera om'}
               </button>
               <button
                 onClick={handleDelete}
