@@ -12,6 +12,7 @@ export default function KundfakturorPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [showUpload, setShowUpload] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterReview, setFilterReview] = useState(false)
 
   const fetchDocuments = useCallback(async () => {
     const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
@@ -25,6 +26,7 @@ export default function KundfakturorPage() {
   const totalInvoiced = documents.reduce((sum, d) => sum + (d.amount ?? 0), 0)
   const totalVat = documents.reduce((sum, d) => sum + (d.vat ?? 0), 0)
   const paidCount = documents.filter((d) => d.status === 'paid').length
+  const needsReview = documents.filter((d) => d.ai_needs_review).length
 
   return (
     <div>
@@ -52,7 +54,7 @@ export default function KundfakturorPage() {
         { label: 'Fakturerat', value: totalInvoiced, icon: '💰' },
         { label: 'Moms', value: totalVat, icon: '🧾' },
         { label: 'Antal', value: documents.length, icon: '📄', format: 'number' },
-        { label: 'Betalda', value: paidCount, icon: '✅', format: 'number' },
+        { label: 'Att granska', value: needsReview, icon: '⚠️', format: 'number', onClick: () => setFilterReview(f => !f), active: filterReview },
       ]} />
 
       {showUpload && (
@@ -61,7 +63,7 @@ export default function KundfakturorPage() {
         </div>
       )}
 
-      <DocumentList documents={documents} onUpdate={fetchDocuments} />
+      <DocumentList documents={filterReview ? documents.filter(d => d.ai_needs_review) : documents} onUpdate={fetchDocuments} />
     </div>
   )
 }

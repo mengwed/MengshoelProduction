@@ -12,6 +12,7 @@ export default function OvrigaDokumentPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [showUpload, setShowUpload] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterReview, setFilterReview] = useState(false)
 
   const fetchDocuments = useCallback(async () => {
     const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
@@ -26,6 +27,7 @@ export default function OvrigaDokumentPage() {
   const loans = documents.filter(d => d.type === 'loan_statement')
   const receipts = documents.filter(d => d.type === 'receipt')
   const rest = documents.filter(d => !['government_fee', 'loan_statement', 'receipt'].includes(d.type))
+  const needsReview = documents.filter(d => d.ai_needs_review).length
 
   return (
     <div>
@@ -53,7 +55,7 @@ export default function OvrigaDokumentPage() {
         { label: 'Myndighetsavgifter', value: govFees.length, icon: '🏛️', format: 'number' },
         { label: 'Låneaviseringar', value: loans.length, icon: '🏦', format: 'number' },
         { label: 'Kvitton', value: receipts.length, icon: '🧾', format: 'number' },
-        { label: 'Övrigt', value: rest.length, icon: '📄', format: 'number' },
+        { label: 'Att granska', value: needsReview, icon: '⚠️', format: 'number', onClick: () => setFilterReview(f => !f), active: filterReview },
       ]} />
 
       {showUpload && (
@@ -62,7 +64,7 @@ export default function OvrigaDokumentPage() {
         </div>
       )}
 
-      <DocumentList documents={documents} onUpdate={fetchDocuments} />
+      <DocumentList documents={filterReview ? documents.filter(d => d.ai_needs_review) : documents} onUpdate={fetchDocuments} />
     </div>
   )
 }

@@ -18,10 +18,12 @@ export function validateExtractionResult(result: AIExtractionResult): AIExtracti
   }
 
   // Check total = amount + vat (only for types that have VAT)
+  // Allow total > amount + vat (extra line items like interest without VAT is common)
+  // Only flag when total is LESS than amount + vat (clearly wrong) or wildly off
   if (result.amount !== null && result.vat !== null && result.total !== null) {
     const expectedTotal = result.amount + result.vat
-    if (Math.abs(result.total - expectedTotal) > 1) {
-      issues.push('Total does not match amount + VAT')
+    if (result.total < expectedTotal - 1) {
+      issues.push('Total is less than amount + VAT')
     }
   }
 

@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       return apiError('No active fiscal year', 400)
     }
 
-    // Check for duplicate (skip if force=true)
+    // Check for duplicate by exact filename or similar filename (skip if force=true)
     if (!force) {
       const { data: existing } = await supabase
         .from('documents')
@@ -56,7 +56,22 @@ export async function POST(request: Request) {
         .limit(1)
 
       if (existing && existing.length > 0) {
-        return apiError(`En fil med namnet "${file.name}" finns redan`, 409)
+        console.log(`[DUPLICATE] Exact filename match: "${file.name}"`)
+        return apiError(`Exakt filnamn finns redan: "${file.name}"`, 409)
+      }
+
+      // Also check for similar filenames (normalize: strip spaces, dashes, underscores, lowercase)
+      const normalize = (n: string) => n.replace(/\.[^.]+$/, '').replace(/[\s_-]+/g, '').toLowerCase()
+      const normalizedName = normalize(file.name)
+      const { data: allDocs } = await supabase
+        .from('documents')
+        .select('id, file_name')
+        .eq('fiscal_year_id', fiscalYear.id)
+
+      const similarDoc = allDocs?.find(d => normalize(d.file_name) === normalizedName)
+      if (similarDoc) {
+        console.log(`[DUPLICATE] Similar filename: "${file.name}" ≈ "${similarDoc.file_name}" (normalized: "${normalizedName}")`)
+        return apiError(`Liknande filnamn: "${file.name}" liknar "${similarDoc.file_name}"`, 409)
       }
     }
 
@@ -192,8 +207,12 @@ export async function POST(request: Request) {
       }
     }
 
-    // Smart duplicate detection: same amount + same supplier/customer + close date
-    if (aiResult.total && (supplierId || customerId)) {
+    // Smart duplicate detection: only block if filename matches/is similar to existing doc
+    // OR if same amount + supplier + close date AND similar filename
+    if (!force && aiResult.total && (supplierId || customerId)) {
+      const normalize = (n: string) => n.replace(/\.[^.]+$/, '').replace(/[\s_-]+/g, '').toLowerCase()
+      const uploadNorm = normalize(file.name)
+
       let dupQuery = supabase
         .from('documents')
         .select('id, file_name, invoice_date')
@@ -210,12 +229,16 @@ export async function POST(request: Request) {
         const closeDup = possibleDups.find(d => {
           if (!d.invoice_date) return false
           const daysDiff = Math.abs(uploadDate - new Date(d.invoice_date).getTime()) / (1000 * 60 * 60 * 24)
-          return daysDiff < 3
+          if (daysDiff >= 3) return false
+          // Also require similar filename to avoid false positives
+          const existingNorm = normalize(d.file_name)
+          return uploadNorm === existingNorm || uploadNorm.includes(existingNorm) || existingNorm.includes(uploadNorm)
         })
 
         if (closeDup) {
+          console.log(`[DUPLICATE] Smart match: "${file.name}" ≈ "${closeDup.file_name}" (amount=${aiResult.total}, date match)`)
           return apiError(
-            `Möjlig dubblett: samma belopp (${aiResult.total} kr) och leverantör, nära datum som "${closeDup.file_name}"`,
+            `Smart dubblett: samma belopp (${aiResult.total} kr), leverantör och datum som "${closeDup.file_name}"`,
             409
           )
         }

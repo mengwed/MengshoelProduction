@@ -37,10 +37,10 @@ describe('validateExtractionResult', () => {
     expect(result.review_reasons).toContain('Negative amount on invoice')
   })
 
-  it('should flag total != amount + vat mismatch', () => {
-    const result = validateExtractionResult({ ...base, amount: 1000, vat: 250, total: 1500 })
+  it('should flag total less than amount + vat', () => {
+    const result = validateExtractionResult({ ...base, amount: 1000, vat: 250, total: 1100 })
     expect(result.needs_review).toBe(true)
-    expect(result.review_reasons).toContain('Total does not match amount + VAT')
+    expect(result.review_reasons).toContain('Total is less than amount + VAT')
   })
 
   it('should not flag when vat is null', () => {

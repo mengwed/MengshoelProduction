@@ -8,6 +8,8 @@ interface Box {
   value: number
   icon: string
   format?: 'currency' | 'number'
+  onClick?: () => void
+  active?: boolean
 }
 
 interface Props {
@@ -56,7 +58,10 @@ export default function SummaryBoxes({ boxes }: Props) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.05 }}
-          className="p-4 bg-gray-900 border border-gray-800 rounded-xl"
+          onClick={box.onClick}
+          className={`p-4 bg-gray-900 border rounded-xl transition-colors ${
+            box.onClick ? 'cursor-pointer hover:border-purple-500/50' : ''
+          } ${box.active ? 'border-purple-500 bg-purple-500/5' : 'border-gray-800'}`}
         >
           <div className="text-2xl mb-1">{box.icon}</div>
           <p className="text-gray-400 text-xs uppercase tracking-wider">{box.label}</p>

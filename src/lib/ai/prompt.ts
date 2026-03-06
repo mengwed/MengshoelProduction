@@ -35,9 +35,10 @@ TYPBESTAMNING (6 typer):
    - Abonnemang (telefon, forsakring, etc.)
    - Trangselskatt, fordonsskatt och andra avgifter fran Transportstyrelsen
    - Alla andra kostnader dar ${company_name} betalar
-3. government_fee: ENBART myndighetsavgifter som INTE kommer fran en befintlig leverantor:
-   - Skatteverket-beslut, F-skatt, arbetsgivaravgifter
-   - counterpart_name ska vara myndighetens namn
+3. government_fee: ENBART Skatteverket-beslut (F-skatt, arbetsgivaravgifter, momsbeslut).
+   - INTE Transportstyrelsen (det ar incoming_invoice)
+   - INTE trangselskatt eller fordonsskatt (det ar incoming_invoice)
+   - counterpart_name ska vara "Skatteverket"
 4. loan_statement: ENBART laneaviseringar (amortering + ranta pa bolan/billan)
 5. credit_card_statement: ENBART bank-/kreditkortsutdrag fran en BANK med FLERA transaktioner listade pa samma dokument. Om dokumentet sager "FAKTURA" eller har EN specifik leverantor/avsandare ar det INTE ett kontoutdrag - da ar det incoming_invoice.
 6. other: Ovrigt som inte passar ovan, t.ex.:

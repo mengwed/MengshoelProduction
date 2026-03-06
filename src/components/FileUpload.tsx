@@ -177,7 +177,7 @@ export default function FileUpload({ typeHint, onUploadComplete }: Props) {
                 <ul className="space-y-1">
                   {failed.map((r, i) => (
                     <li key={i} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-400 truncate mr-2">{r.file.name} — {r.status === 'duplicate' ? 'finns redan' : r.error}</span>
+                      <span className="text-gray-400 truncate mr-2">{r.file.name} — {r.error || 'finns redan'}</span>
                       {r.status === 'duplicate' && (
                         <button
                           onClick={() => uploadFile(r.file, true)}

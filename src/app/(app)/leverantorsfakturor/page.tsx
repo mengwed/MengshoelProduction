@@ -12,6 +12,7 @@ export default function LeverantörsfakturorPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [showUpload, setShowUpload] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterReview, setFilterReview] = useState(false)
 
   const fetchDocuments = useCallback(async () => {
     const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
@@ -52,7 +53,7 @@ export default function LeverantörsfakturorPage() {
         { label: 'Kostnader', value: totalExpenses, icon: '📦' },
         { label: 'Ingående moms', value: totalVat, icon: '🧾' },
         { label: 'Antal', value: documents.length, icon: '📄', format: 'number' },
-        { label: 'Att granska', value: needsReview, icon: '⚠️', format: 'number' },
+        { label: 'Att granska', value: needsReview, icon: '⚠️', format: 'number', onClick: () => setFilterReview(f => !f), active: filterReview },
       ]} />
 
       {showUpload && (
@@ -61,7 +62,7 @@ export default function LeverantörsfakturorPage() {
         </div>
       )}
 
-      <DocumentList documents={documents} onUpdate={fetchDocuments} />
+      <DocumentList documents={filterReview ? documents.filter(d => d.ai_needs_review) : documents} onUpdate={fetchDocuments} />
     </div>
   )
 }
