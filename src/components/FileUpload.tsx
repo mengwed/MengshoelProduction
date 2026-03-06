@@ -103,7 +103,7 @@ export default function FileUpload({ typeHint, onUploadComplete }: Props) {
         onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+        className={`border-2 border-dashed rounded-xl p-6 md:p-12 text-center transition-colors ${
           isDragging
             ? 'border-purple-500 bg-purple-500/10'
             : 'border-gray-800 hover:border-gray-600'
