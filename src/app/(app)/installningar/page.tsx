@@ -42,11 +42,11 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-8">Installningar</h1>
+      <h1 className="text-2xl font-bold text-white mb-8">Inställningar</h1>
 
       <form onSubmit={handleSubmit} className="max-w-lg space-y-6">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Foretagsnamn</label>
+          <label className="block text-sm text-gray-400 mb-1">Företagsnamn</label>
           <input
             type="text"
             value={settings.company_name}
@@ -66,12 +66,12 @@ export default function SettingsPage() {
             <option value="enskild firma">Enskild firma</option>
             <option value="aktiebolag">Aktiebolag</option>
             <option value="handelsbolag">Handelsbolag</option>
-            <option value="ekonomisk forening">Ekonomisk forening</option>
+            <option value="ekonomisk förening">Ekonomisk förening</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Agare/kontaktperson</label>
+          <label className="block text-sm text-gray-400 mb-1">Ägare/kontaktperson</label>
           <input
             type="text"
             value={settings.owner_name || ''}

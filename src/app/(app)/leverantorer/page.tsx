@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { Supplier, SupplierInput, Category } from '@/types'
 import EntityForm from '@/components/EntityForm'
 import LinkedDocuments from '@/components/LinkedDocuments'
+import CategoryPicker from '@/components/CategoryPicker'
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -113,9 +114,18 @@ export default function SuppliersPage() {
                   </span>
                   {supplier.name}
                 </td>
-                <td className="px-4 py-3 text-gray-400">
-                  {supplier.category_emoji && <span className="mr-1">{supplier.category_emoji}</span>}
-                  {supplier.category_name || '-'}
+                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                  <CategoryPicker
+                    value={supplier.category_id}
+                    onChange={async (categoryId) => {
+                      await fetch(`/api/suppliers/${supplier.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: supplier.name, category_id: categoryId }),
+                      })
+                      fetchSuppliers()
+                    }}
+                  />
                 </td>
                 <td className="px-4 py-3 text-gray-400">{supplier.org_number || '-'}</td>
                 <td className="px-4 py-3 text-gray-400">{supplier.email || '-'}</td>

@@ -7,6 +7,8 @@
 
 ## User Context
 
+Anne (Anne Juul Mengshoel) är den primära användaren av appen. Det är hennes företag (Mengshoel Production) som hanteras. Anne HATAR allt vad ekonomi heter, så vi ska göra ALLT för att hon ska få en angenäm UI/UX-upplevelse — appen ska vara enkel, tydlig och så friktionsfri som möjligt. När användaren refererar till "Anne" menas hon.
+
 Användaren är VD/företagare utan utvecklarerfarenhet. Ge alltid tydlig steg-för-steg-vägledning vid:
 - Supabase-hantering (migrationer, databasschema, RLS-policies, dashboard)
 - Deploy och hosting (Vercel, miljövariabler, domäner)
@@ -31,7 +33,7 @@ Förklara *varför* saker behöver göras, inte bara *vad*. Undvik jargong utan 
 
 ## Conventions
 
-<!-- Lägg till konventioner här -->
+- UI-texter ska alltid skrivas med korrekta svenska tecken (å, ä, ö, Å, Ä, Ö). Skriv ALDRIG "Installningar", "Foretagsnamn", "Sok", "Agare", "forening" etc. — det ska vara "Inställningar", "Företagsnamn", "Sök", "Ägare", "förening".
 
 ## Architecture
 

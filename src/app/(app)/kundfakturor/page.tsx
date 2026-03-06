@@ -30,7 +30,7 @@ export default function KundfakturorPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-white">Kundfakturor</h1>
         <div className="flex gap-2">
-          <SearchInput onSearch={setSearchQuery} placeholder="Sok dokument..." />
+          <SearchInput onSearch={setSearchQuery} placeholder="Sök dokument..." />
           <a
             href="/api/documents/export?type=outgoing"
             className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors text-sm"

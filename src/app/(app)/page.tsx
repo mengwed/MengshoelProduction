@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import type { Document } from '@/types'
 import SummaryBoxes from '@/components/SummaryBoxes'
@@ -95,6 +96,73 @@ function MonthlyChart({ data }: { data: MonthlyBreakdown[] }) {
   )
 }
 
+function GlobalSearch() {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<Document[]>([])
+  const [open, setOpen] = useState(false)
+  const router = useRouter()
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return }
+    const timer = setTimeout(() => {
+      fetch(`/api/documents?search=${encodeURIComponent(query)}`)
+        .then(r => r.json())
+        .then(d => setResults((d.data ?? d).slice(0, 8)))
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  function getDocHref(doc: Document) {
+    if (doc.type === 'outgoing_invoice') return '/kundfakturor'
+    if (doc.type === 'incoming_invoice') return '/leverantorsfakturor'
+    return '/ovriga-dokument'
+  }
+
+  return (
+    <div ref={ref} className="relative w-full max-w-xl">
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
+        <input
+          type="text"
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => query && setOpen(true)}
+          placeholder="Sök fakturor, leverantörer, kunder..."
+          className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-white text-sm focus:border-purple-500 focus:outline-none transition-colors"
+        />
+      </div>
+      {open && results.length > 0 && (
+        <div className="absolute top-full mt-2 w-full bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
+          {results.map(doc => (
+            <button
+              key={doc.id}
+              onClick={() => { setOpen(false); setQuery(''); router.push(getDocHref(doc)) }}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800 transition-colors text-left"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm truncate">{doc.file_name}</p>
+                <p className="text-gray-500 text-xs">
+                  {doc.supplier_name || doc.customer_name || 'Okänd'} — {doc.invoice_date ? new Date(doc.invoice_date).toLocaleDateString('sv-SE') : 'Inget datum'}
+                  {doc.amount != null && ` — ${formatSEK(doc.amount)}`}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardData | null>(null)
   const [reviewDocs, setReviewDocs] = useState<Document[]>([])
@@ -118,7 +186,10 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-8">Dashboard</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <GlobalSearch />
+      </div>
 
       <SummaryBoxes boxes={[
         { label: 'Intäkter', value: stats.income, icon: '💰' },

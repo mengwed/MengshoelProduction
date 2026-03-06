@@ -24,7 +24,7 @@ export default function Sidebar() {
   return (
     <aside className="w-64 h-screen bg-gray-950 border-r border-gray-800 flex flex-col fixed left-0 top-0">
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-white tracking-tight">AJ</h1>
+        <img src="/icon.svg" alt="AJ" className="w-10 h-10" />
       </div>
 
       <nav className="flex-1 px-3 space-y-1">

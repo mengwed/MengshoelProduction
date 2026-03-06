@@ -216,7 +216,7 @@ export default function BankavstamningPage() {
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Sok pa filnamn, fakturanummer, leverantor..."
+                placeholder="Sök på filnamn, fakturanummer, leverantör..."
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4 focus:border-purple-500 focus:outline-none"
                 autoFocus
               />

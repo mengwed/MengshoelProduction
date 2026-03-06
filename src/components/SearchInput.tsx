@@ -7,7 +7,7 @@ interface SearchInputProps {
   placeholder?: string
 }
 
-export default function SearchInput({ onSearch, placeholder = 'Sok...' }: SearchInputProps) {
+export default function SearchInput({ onSearch, placeholder = 'Sök...' }: SearchInputProps) {
   const [value, setValue] = useState('')
 
   useEffect(() => {

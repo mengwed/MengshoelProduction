@@ -71,12 +71,23 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         )
       }
 
-      // If user sets a category and doc has a supplier, save the mapping for future auto-categorization
-      if (validated.data.category_id && current.supplier_id) {
+      // If user sets a category and doc has a supplier/customer, propagate to all their documents
+      if (validated.data.category_id !== undefined && current.supplier_id) {
         await supabase
           .from('suppliers')
           .update({ category_id: validated.data.category_id })
           .eq('id', current.supplier_id)
+        // Update all documents from this supplier that don't have a category yet (or update all)
+        await supabase
+          .from('documents')
+          .update({ category_id: validated.data.category_id })
+          .eq('supplier_id', current.supplier_id)
+      }
+      if (validated.data.category_id !== undefined && current.customer_id) {
+        await supabase
+          .from('documents')
+          .update({ category_id: validated.data.category_id })
+          .eq('customer_id', current.customer_id)
       }
     }
 

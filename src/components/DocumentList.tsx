@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Document } from '@/types'
 import DocumentPanel from '@/components/DocumentPanel'
+import CategoryPicker from '@/components/CategoryPicker'
 
 const TYPE_LABELS: Record<string, string> = {
   outgoing_invoice: 'Kundfaktura',
@@ -63,6 +64,7 @@ export default function DocumentList({ documents, onUpdate }: Props) {
               <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Fakturanr</th>
               <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Belopp</th>
               <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Moms</th>
+              <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Kategori</th>
               <th className="text-center px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Status</th>
               <th className="text-center px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">AI</th>
             </tr>
@@ -85,6 +87,19 @@ export default function DocumentList({ documents, onUpdate }: Props) {
                 <td className="px-4 py-3 text-gray-400 text-sm">{doc.invoice_number || '-'}</td>
                 <td className="px-4 py-3 text-white text-sm text-right font-mono">{formatAmount(doc.amount)}</td>
                 <td className="px-4 py-3 text-gray-400 text-sm text-right font-mono">{formatAmount(doc.vat)}</td>
+                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                  <CategoryPicker
+                    value={doc.category_id}
+                    onChange={async (categoryId) => {
+                      await fetch(`/api/documents/${doc.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ category_id: categoryId }),
+                      })
+                      onUpdate()
+                    }}
+                  />
+                </td>
                 <td className="px-4 py-3 text-center">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[doc.status]}`}>
                     {STATUS_LABELS[doc.status]}
