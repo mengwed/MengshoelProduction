@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { CompanySettings } from '@/types'
+import CustomSelect from '@/components/CustomSelect'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<CompanySettings | null>(null)
@@ -59,16 +60,17 @@ export default function SettingsPage() {
 
         <div>
           <label className="block text-sm text-gray-400 mb-1">Organisationstyp</label>
-          <select
+          <CustomSelect
             value={settings.organization_type}
-            onChange={e => setSettings({ ...settings, organization_type: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:border-purple-500 focus:outline-none"
-          >
-            <option value="enskild firma">Enskild firma</option>
-            <option value="aktiebolag">Aktiebolag</option>
-            <option value="handelsbolag">Handelsbolag</option>
-            <option value="ekonomisk förening">Ekonomisk förening</option>
-          </select>
+            onChange={(v) => setSettings({ ...settings, organization_type: v })}
+            options={[
+              { value: 'enskild firma', label: 'Enskild firma' },
+              { value: 'aktiebolag', label: 'Aktiebolag' },
+              { value: 'handelsbolag', label: 'Handelsbolag' },
+              { value: 'ekonomisk förening', label: 'Ekonomisk förening' },
+            ]}
+            className="w-full"
+          />
         </div>
 
         <div>

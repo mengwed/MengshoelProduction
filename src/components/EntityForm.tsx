@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Customer, Supplier, CustomerInput, SupplierInput, Category } from '@/types'
+import CustomSelect from '@/components/CustomSelect'
 
 interface Props {
   entity?: Customer | Supplier
@@ -77,18 +78,12 @@ export default function EntityForm({ entity, type, categories, onSave, onCancel 
         {type === 'supplier' && categories && (
           <div>
             <label className="block text-sm text-gray-400 mb-1">Kategori</label>
-            <select
+            <CustomSelect
               value={categoryId ?? ''}
-              onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)}
-              className={inputClass}
-            >
-              <option value="">Ingen kategori</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.emoji ? `${cat.emoji} ` : ''}{cat.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setCategoryId(v ? Number(v) : null)}
+              options={[{ value: '', label: 'Ingen kategori' }, ...categories.map(cat => ({ value: cat.id, label: `${cat.emoji ? `${cat.emoji} ` : ''}${cat.name}` }))]}
+              className="w-full"
+            />
           </div>
         )}
       </div>

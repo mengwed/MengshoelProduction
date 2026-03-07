@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import type { Document, DocumentType, DocumentStatus, Customer, Supplier, Category } from '@/types'
+import CustomSelect from '@/components/CustomSelect'
+import CustomCheckbox from '@/components/CustomCheckbox'
 
 const TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
   { value: 'outgoing_invoice', label: 'Kundfaktura' },
@@ -188,15 +190,21 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Typ</label>
-                <select value={type} onChange={(e) => setType(e.target.value as DocumentType)} className={inputClass}>
-                  {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <CustomSelect
+                  value={type}
+                  onChange={(v) => setType(v as DocumentType)}
+                  options={TYPE_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+                  className="w-full"
+                />
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Status</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as DocumentStatus)} className={inputClass}>
-                  {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <CustomSelect
+                  value={status}
+                  onChange={(v) => setStatus(v as DocumentStatus)}
+                  options={STATUS_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+                  className="w-full"
+                />
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Fakturanummer</label>
@@ -233,39 +241,42 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
               {isOutgoing ? (
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Kund</label>
-                  <select value={customerId ?? ''} onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : null)} className={inputClass}>
-                    <option value="">Ingen</option>
-                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={customerId ?? ''}
+                    onChange={(v) => setCustomerId(v ? Number(v) : null)}
+                    options={[{ value: '', label: 'Ingen' }, ...customers.map(c => ({ value: c.id, label: c.name }))]}
+                    className="w-full"
+                  />
                 </div>
               ) : (
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Leverantör</label>
-                  <select value={supplierId ?? ''} onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : null)} className={inputClass}>
-                    <option value="">Ingen</option>
-                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={supplierId ?? ''}
+                    onChange={(v) => setSupplierId(v ? Number(v) : null)}
+                    options={[{ value: '', label: 'Ingen' }, ...suppliers.map(s => ({ value: s.id, label: s.name }))]}
+                    className="w-full"
+                  />
                 </div>
               )}
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Kategori</label>
-                <select value={categoryId ?? ''} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)} className={inputClass}>
-                  <option value="">Ingen</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.emoji ? `${c.emoji} ` : ''}{c.name}</option>)}
-                </select>
+                <CustomSelect
+                  value={categoryId ?? ''}
+                  onChange={(v) => setCategoryId(v ? Number(v) : null)}
+                  options={[{ value: '', label: 'Ingen' }, ...categories.map(c => ({ value: c.id, label: `${c.emoji ? `${c.emoji} ` : ''}${c.name}` }))]}
+                  className="w-full"
+                />
               </div>
             </div>
 
             {isOutgoing && (
-              <label className="flex items-center gap-2 mb-6 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={vatPaid}
-                  onChange={(e) => setVatPaid(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">Har betalat moms</span>
-              </label>
+              <CustomCheckbox
+                checked={vatPaid}
+                onChange={setVatPaid}
+                label="Har betalat moms"
+                className="mb-6"
+              />
             )}
 
             <div className="flex flex-wrap gap-3">

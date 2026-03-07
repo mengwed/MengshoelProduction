@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { FiscalYear } from '@/types'
+import CustomSelect from '@/components/CustomSelect'
 
 export default function FiscalYearSelector() {
   const [years, setYears] = useState<FiscalYear[]>([])
@@ -66,15 +67,12 @@ export default function FiscalYearSelector() {
   return (
     <div className="space-y-1">
       <div className="flex gap-1">
-        <select
+        <CustomSelect
           value={activeId ?? ''}
-          onChange={(e) => handleChange(Number(e.target.value))}
-          className="flex-1 px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-        >
-          {years.map((y) => (
-            <option key={y.id} value={y.id}>{y.year}</option>
-          ))}
-        </select>
+          onChange={(v) => handleChange(Number(v))}
+          options={years.map(y => ({ value: y.id, label: String(y.year) }))}
+          className="flex-1"
+        />
         <button
           onClick={() => setAdding(!adding)}
           className="px-2 py-2 bg-gray-900 border border-gray-800 rounded-lg text-gray-400 hover:text-white hover:border-gray-600 transition-colors text-sm"
