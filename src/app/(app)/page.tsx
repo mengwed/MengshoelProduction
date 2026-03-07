@@ -144,9 +144,10 @@ function GlobalSearch() {
   }, [])
 
   function getDocHref(doc: Document) {
-    if (doc.type === 'outgoing_invoice') return '/kundfakturor'
-    if (doc.type === 'incoming_invoice') return '/leverantorsfakturor'
-    return '/ovriga-dokument'
+    const base = doc.type === 'outgoing_invoice' ? '/kundfakturor'
+      : doc.type === 'incoming_invoice' ? '/leverantorsfakturor'
+      : '/ovriga-dokument'
+    return `${base}?doc=${doc.id}`
   }
 
   return (

@@ -83,13 +83,19 @@ export async function GET(request: NextRequest) {
 
       const orFilters = [`file_name.ilike.${term}`, `invoice_number.ilike.${term}`]
 
-      // Allow searching by amount (exact or close match)
+      // Allow searching by amount, total, and vat (range ±10 for rounding)
       const numericSearch = parseFloat(search.replace(/\s/g, '').replace(/,/g, '.'))
       if (!isNaN(numericSearch)) {
-        orFilters.push(`total.eq.${numericSearch}`)
-        orFilters.push(`total.eq.${-numericSearch}`)
-        orFilters.push(`amount.eq.${numericSearch}`)
-        orFilters.push(`amount.eq.${-numericSearch}`)
+        const lo = numericSearch - 10
+        const hi = numericSearch + 10
+        const nlo = -numericSearch - 10
+        const nhi = -numericSearch + 10
+        orFilters.push(`and(amount.gte.${lo},amount.lte.${hi})`)
+        orFilters.push(`and(amount.gte.${nlo},amount.lte.${nhi})`)
+        orFilters.push(`and(total.gte.${lo},total.lte.${hi})`)
+        orFilters.push(`and(total.gte.${nlo},total.lte.${nhi})`)
+        orFilters.push(`and(vat.gte.${lo},vat.lte.${hi})`)
+        orFilters.push(`and(vat.gte.${nlo},vat.lte.${nhi})`)
       }
       if (matchingSuppliers?.length) {
         orFilters.push(`supplier_id.in.(${matchingSuppliers.map(s => s.id).join(',')})`)
