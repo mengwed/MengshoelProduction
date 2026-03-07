@@ -76,6 +76,7 @@ export interface Document {
   ai_confidence: number | null
   ai_needs_review: boolean
   vat_paid: boolean
+  payment_received: boolean
   status: DocumentStatus
   created_at: string
   // Joined fields

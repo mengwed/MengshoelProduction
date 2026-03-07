@@ -45,6 +45,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
   const [categoryId, setCategoryId] = useState<number | null>(doc.category_id)
   const [paymentDate, setPaymentDate] = useState(doc.payment_date ?? '')
   const [vatPaid, setVatPaid] = useState(doc.vat_paid ?? false)
+  const [paymentReceived, setPaymentReceived] = useState(doc.payment_received ?? false)
 
   const [customers, setCustomers] = useState<Customer[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -94,6 +95,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
         category_id: categoryId,
         payment_date: paymentDate || null,
         vat_paid: vatPaid,
+        payment_received: paymentReceived,
         ai_needs_review: false,
       }),
     })
@@ -315,12 +317,18 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
             </div>
 
             {isOutgoing && (
-              <CustomCheckbox
-                checked={vatPaid}
-                onChange={setVatPaid}
-                label="Har överfört pengar till momskontot. Kom ihåg att ladda upp momsdragningen från banken!"
-                className="mb-4"
-              />
+              <div className="space-y-2 mb-4">
+                <CustomCheckbox
+                  checked={paymentReceived}
+                  onChange={setPaymentReceived}
+                  label="Har mottagit pengar från kund"
+                />
+                <CustomCheckbox
+                  checked={vatPaid}
+                  onChange={setVatPaid}
+                  label="Har överfört pengar till momskontot. Kom ihåg att ladda upp momsdragningen från banken!"
+                />
+              </div>
             )}
 
             {/* Attachments section */}

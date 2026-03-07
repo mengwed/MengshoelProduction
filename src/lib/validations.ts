@@ -49,6 +49,7 @@ export const documentUpdateSchema = z.object({
   payment_date: z.string().nullable().optional(),
   ai_needs_review: z.boolean().optional(),
   vat_paid: z.boolean().optional(),
+  payment_received: z.boolean().optional(),
   fiscal_year_id: z.number().int().positive().optional(),
 })
 

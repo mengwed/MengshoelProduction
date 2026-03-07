@@ -169,6 +169,9 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
                   <span>{TYPE_LABELS[doc.type] || doc.type}</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  {doc.type === 'outgoing_invoice' && doc.payment_received && (
+                    <span className="text-xs" title="Betalning mottagen">✅</span>
+                  )}
                   {doc.type === 'outgoing_invoice' && doc.vat_paid && (
                     <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">Moms betald</span>
                   )}
@@ -220,7 +223,12 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
                       <span className="ml-1.5 text-gray-400" title="Har bifogade filer">📎</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-400 text-sm">{doc.invoice_number || '-'}</td>
+                  <td className="px-4 py-3 text-gray-400 text-sm">
+                    {doc.invoice_number || '-'}
+                    {doc.type === 'outgoing_invoice' && doc.payment_received && (
+                      <span className="ml-1" title="Betalning mottagen">✅</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-white text-sm text-right font-mono">{formatAmount(doc.amount)}</td>
                   <td className="px-4 py-3 text-right">
                     <span className="text-gray-400 text-sm font-mono">{formatAmount(doc.vat)}</span>
