@@ -72,4 +72,48 @@ describe('scoreMatch', () => {
   it('CONFIDENCE_THRESHOLD should be 0.70', () => {
     expect(CONFIDENCE_THRESHOLD).toBe(0.70)
   })
+
+  it('should match when tx amount equals doc amount + vat (total)', () => {
+    const docWithVat = {
+      ...baseDoc,
+      invoice_number: null,
+      amount: 50000,
+      vat: 12500,
+      total: 62500,
+      invoice_date: '2025-06-15',
+    }
+    const score = scoreMatch(
+      { reference: null, amount: -62500, booking_date: '2025-06-18' },
+      docWithVat
+    )
+    expect(score).toBeGreaterThanOrEqual(0.75)
+  })
+
+  it('should match tx amount against doc.total', () => {
+    const docWithTotal = {
+      ...baseDoc,
+      invoice_number: null,
+      amount: 1200,
+      total: 1500,
+      invoice_date: '2025-06-15',
+    }
+    const score = scoreMatch(
+      { reference: null, amount: -1500, booking_date: '2025-06-18' },
+      docWithTotal
+    )
+    expect(score).toBe(0.75)
+  })
+
+  it('should fuzzy match supplier name with 4+ characters', () => {
+    const docShortName = {
+      ...baseDoc,
+      invoice_number: null,
+      suppliers: { name: 'IKEA' },
+    }
+    const score = scoreMatch(
+      { reference: 'IKEA inredning', amount: -1500, booking_date: '2025-08-01' },
+      docShortName
+    )
+    expect(score).toBeGreaterThanOrEqual(0.70)
+  })
 })
