@@ -264,17 +264,16 @@ export default function BankavstamningPage() {
 
     if (tx.comment) {
       return (
-        <div className="flex items-center gap-1">
+        <div className="flex items-start gap-1">
           <button
             onClick={() => startEditComment(tx)}
-            className="text-gray-300 text-sm hover:text-white text-left truncate max-w-[180px]"
-            title={tx.comment}
+            className="text-gray-300 text-sm hover:text-white text-left break-words whitespace-normal"
           >
             {tx.comment}
           </button>
           <button
             onClick={() => handleSaveComment(tx.id, '')}
-            className="text-gray-600 hover:text-red-400 text-xs shrink-0 px-0.5"
+            className="text-gray-600 hover:text-red-400 text-xs shrink-0 px-0.5 mt-0.5"
             title="Ta bort kommentar"
           >
             ✕
@@ -656,7 +655,6 @@ export default function BankavstamningPage() {
                 <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Typ</th>
                 <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Referens</th>
                 <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Belopp</th>
-                <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Saldo</th>
                 <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Matchning</th>
                 <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Kommentar</th>
               </tr>
@@ -683,9 +681,6 @@ export default function BankavstamningPage() {
                   <td className="px-4 py-3 text-gray-400 text-sm truncate max-w-xs">{tx.reference || '-'}</td>
                   <td className={`px-4 py-3 text-sm text-right font-mono ${tx.amount >= 0 ? 'text-green-400' : 'text-white'}`}>
                     {formatAmount(tx.amount)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-sm text-right font-mono">
-                    {tx.balance != null ? formatAmount(tx.balance) : '-'}
                   </td>
                   <td className="px-4 py-3">
                     {renderMatchSection(tx)}

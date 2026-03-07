@@ -201,9 +201,9 @@ export default function DocumentList({ documents, onUpdate, highlightId, hideSta
           )}
         </div>
       ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-clip">
           <table className="w-full">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-gray-900">
               <tr className="border-b border-gray-800">
                 <SortHeader label="Datum" col="date" />
                 <SortHeader label="Typ" col="type" />

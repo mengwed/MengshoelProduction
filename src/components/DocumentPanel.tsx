@@ -197,7 +197,12 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 shrink-0">
           <h2 className="text-lg font-bold text-white truncate">{doc.file_name}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl ml-4 shrink-0">&times;</button>
+          <button
+            onClick={onClose}
+            className="ml-4 shrink-0 w-9 h-9 rounded-full bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center text-lg font-bold shadow-lg shadow-purple-900/40 transition-all hover:scale-110"
+          >
+            &times;
+          </button>
         </div>
 
         {/* Body: PDF left, form right */}
