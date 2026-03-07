@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import type { Document } from '@/types'
 import SummaryBoxes from '@/components/SummaryBoxes'
 import DocumentList from '@/components/DocumentList'
@@ -9,6 +10,8 @@ import SearchInput from '@/components/SearchInput'
 import ReparseAllButton from '@/components/ReparseAllButton'
 
 export default function KundfakturorPage() {
+  const searchParams = useSearchParams()
+  const highlightId = searchParams.get('doc') || undefined
   const [documents, setDocuments] = useState<Document[]>([])
   const [showUpload, setShowUpload] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -51,7 +54,7 @@ export default function KundfakturorPage() {
       </div>
 
       <SummaryBoxes boxes={[
-        { label: 'Fakturerat', value: totalInvoiced, icon: '💰' },
+        { label: 'Fakturerat (ex moms)', value: totalInvoiced, icon: '💰' },
         { label: 'Moms', value: totalVat, icon: '🧾' },
         { label: 'Antal', value: documents.length, icon: '📄', format: 'number' },
         { label: 'Att granska', value: needsReview, icon: '⚠️', format: 'number', onClick: () => setFilterReview(f => !f), active: filterReview },
@@ -63,7 +66,7 @@ export default function KundfakturorPage() {
         </div>
       )}
 
-      <DocumentList documents={filterReview ? documents.filter(d => d.ai_needs_review) : documents} onUpdate={fetchDocuments} />
+      <DocumentList documents={filterReview ? documents.filter(d => d.ai_needs_review) : documents} onUpdate={fetchDocuments} highlightId={highlightId} />
     </div>
   )
 }

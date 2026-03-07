@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Document } from '@/types'
 import DocumentPanel from '@/components/DocumentPanel'
@@ -14,6 +14,7 @@ const TYPE_LABELS: Record<string, string> = {
   government_fee: 'Myndighetsavgift',
   loan_statement: 'Låneavisering',
   receipt: 'Kvitto',
+  insurance: 'Försäkring',
   other: 'Övrigt',
 }
 
@@ -35,9 +36,10 @@ type SortDir = 'asc' | 'desc'
 interface Props {
   documents: Document[]
   onUpdate: () => void
+  highlightId?: string
 }
 
-export default function DocumentList({ documents, onUpdate }: Props) {
+export default function DocumentList({ documents, onUpdate, highlightId }: Props) {
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -96,6 +98,17 @@ export default function DocumentList({ documents, onUpdate }: Props) {
       maximumFractionDigits: 0,
     }).format(amount)
   }
+
+  const highlightedRef = useRef(false)
+  useEffect(() => {
+    if (highlightId && documents.length > 0 && !highlightedRef.current) {
+      const doc = documents.find(d => d.id === highlightId)
+      if (doc) {
+        setSelectedDoc(doc)
+        highlightedRef.current = true
+      }
+    }
+  }, [highlightId, documents])
 
   const [isMobile, setIsMobile] = useState(false)
 

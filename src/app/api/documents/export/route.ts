@@ -30,10 +30,7 @@ export async function GET(request: NextRequest) {
     if (type === 'outgoing') {
       query = query.eq('type', 'outgoing_invoice')
     } else if (type === 'incoming') {
-      query = query.in('type', [
-        'incoming_invoice', 'credit_card_statement', 'government_fee',
-        'loan_statement', 'receipt', 'other'
-      ])
+      query = query.neq('type', 'outgoing_invoice')
     }
 
     const { data: documents, error } = await query

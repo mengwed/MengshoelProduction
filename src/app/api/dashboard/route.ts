@@ -19,7 +19,7 @@ export async function GET() {
 
     const { data: documents } = await supabase
       .from('documents')
-      .select('type, amount, vat, vat_paid, total, ai_needs_review, invoice_date, invoice_number, supplier_id, customer_id, category_id, suppliers(name), customers(name), categories(name)')
+      .select('id, type, amount, vat, vat_paid, total, ai_needs_review, invoice_date, invoice_number, supplier_id, customer_id, category_id, suppliers(name), customers(name), categories(name)')
       .eq('fiscal_year_id', fiscalYear.id)
 
     if (!documents) {
@@ -35,7 +35,7 @@ export async function GET() {
     let vatPayments = 0, vatPaidMarked = 0
 
     // Group by supplier for anomaly + recurring detection
-    const supplierHistory: Record<number, { name: string; amounts: number[]; months: Set<string> }> = {}
+    const supplierHistory: Record<number, { name: string; entries: { amount: number; documentId: string; docType: string }[]; months: Set<string>; latestDocId: string | null; latestDocType: string | null }> = {}
     const monthlyData: Record<string, { income: number; expenses: number }> = {}
 
     for (const doc of documents) {
@@ -46,13 +46,16 @@ export async function GET() {
       const categoryName = (doc.categories as unknown as { name: string } | null)?.name?.toLowerCase() ?? ''
       const isVatPayment = categoryName === 'moms'
 
+      // Skip bank/credit card statements from all summaries — they are informational only
+      const isStatement = doc.type === 'credit_card_statement'
+
       if (doc.type === 'outgoing_invoice') {
         income += amt
         incomeVat += vatAmt
         if (doc.vat_paid) vatPaidMarked += vatAmt
       } else if (isVatPayment) {
         vatPayments += doc.total ?? amt
-      } else {
+      } else if (!isStatement) {
         expenses += amt
         expensesVat += vatAmt
       }
@@ -66,7 +69,7 @@ export async function GET() {
           if (!monthlyData[month]) monthlyData[month] = { income: 0, expenses: 0 }
           if (doc.type === 'outgoing_invoice') {
             monthlyData[month].income += doc.total ?? amt
-          } else if (!isVatPayment) {
+          } else if (!isVatPayment && !isStatement) {
             monthlyData[month].expenses += doc.total ?? amt
           }
         }
@@ -74,43 +77,47 @@ export async function GET() {
 
       // Supplier history
       const suppId = doc.supplier_id
-      if (suppId && doc.type !== 'outgoing_invoice') {
+      if (suppId && doc.type !== 'outgoing_invoice' && !isStatement) {
         if (!supplierHistory[suppId]) {
           const name = (doc.suppliers as unknown as { name: string } | null)?.name || 'Okänd'
-          supplierHistory[suppId] = { name, amounts: [], months: new Set() }
+          supplierHistory[suppId] = { name, entries: [], months: new Set(), latestDocId: null, latestDocType: null }
         }
-        supplierHistory[suppId].amounts.push(doc.total ?? amt)
+        supplierHistory[suppId].entries.push({ amount: doc.total ?? amt, documentId: doc.id, docType: doc.type })
         if (doc.invoice_date) {
           supplierHistory[suppId].months.add(doc.invoice_date.slice(0, 7))
         }
+        supplierHistory[suppId].latestDocId = doc.id
+        supplierHistory[suppId].latestDocType = doc.type
       }
     }
 
     // Anomaly detection: flag invoices that deviate >100% from supplier average
-    const anomalies: { supplier: string; amount: number; average: number; message: string }[] = []
+    const anomalies: { supplier: string; amount: number; average: number; message: string; document_id: string; doc_type: string }[] = []
     for (const [, hist] of Object.entries(supplierHistory)) {
-      if (hist.amounts.length < 2) continue
-      const avg = hist.amounts.reduce((a, b) => a + b, 0) / hist.amounts.length
-      for (const amt of hist.amounts) {
-        if (avg > 0 && amt > avg * 2.5) {
+      if (hist.entries.length < 2) continue
+      const avg = hist.entries.reduce((a, b) => a + b.amount, 0) / hist.entries.length
+      for (const entry of hist.entries) {
+        if (avg > 0 && entry.amount > avg * 2.5) {
           anomalies.push({
             supplier: hist.name,
-            amount: amt,
+            amount: entry.amount,
             average: Math.round(avg),
-            message: `${hist.name}: ${Math.round(amt)} kr är ovanligt högt (snitt ${Math.round(avg)} kr)`,
+            message: `${hist.name}: ${Math.round(entry.amount)} kr är ovanligt högt (snitt ${Math.round(avg)} kr)`,
+            document_id: entry.documentId,
+            doc_type: entry.docType,
           })
         }
       }
     }
 
     // Missing recurring invoices: suppliers with 3+ invoices that are missing recent months
-    const missing: { supplier: string; lastSeen: string; message: string }[] = []
+    const missing: { supplier: string; lastSeen: string; message: string; document_id: string | null; doc_type: string | null }[] = []
     const now = new Date()
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`
 
     for (const [, hist] of Object.entries(supplierHistory)) {
-      if (hist.amounts.length >= 3 && hist.months.size >= 3) {
+      if (hist.entries.length >= 3 && hist.months.size >= 3) {
         // This looks recurring — check if recent months are missing
         const sortedMonths = [...hist.months].sort()
         const latest = sortedMonths[sortedMonths.length - 1]
@@ -119,6 +126,8 @@ export async function GET() {
             supplier: hist.name,
             lastSeen: latest,
             message: `${hist.name}: senaste faktura ${latest}, förväntas varje månad`,
+            document_id: hist.latestDocId,
+            doc_type: hist.latestDocType,
           })
         }
       }
@@ -181,7 +190,7 @@ export async function GET() {
       expenses,
       expenses_vat: expensesVat,
       result: income - expenses,
-      vat_to_pay: incomeVat - expensesVat,
+      vat_to_pay: incomeVat,
       vat_payments: vatPayments,
       vat_paid_marked: vatPaidMarked,
       document_count: documents.length,

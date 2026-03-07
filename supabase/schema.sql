@@ -52,6 +52,7 @@ CREATE TYPE document_type AS ENUM (
   'government_fee',
   'loan_statement',
   'receipt',
+  'insurance',
   'other'
 );
 

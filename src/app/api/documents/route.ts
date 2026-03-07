@@ -45,10 +45,7 @@ export async function GET(request: NextRequest) {
     } else if (type === 'incoming') {
       query = query.eq('type', 'incoming_invoice')
     } else if (type === 'other') {
-      query = query.in('type', [
-        'credit_card_statement', 'loan_statement',
-        'government_fee', 'receipt', 'payment_received', 'other'
-      ])
+      query = query.not('type', 'in', '("outgoing_invoice","incoming_invoice")')
     }
 
     if (month) {

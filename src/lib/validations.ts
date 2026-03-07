@@ -33,7 +33,7 @@ export const documentUpdateSchema = z.object({
   type: z.enum([
     'outgoing_invoice', 'incoming_invoice', 'payment_received',
     'credit_card_statement', 'government_fee', 'loan_statement',
-    'receipt', 'other',
+    'receipt', 'insurance', 'other',
   ]).optional(),
   invoice_number: z.string().max(100).nullable().optional(),
   invoice_date: z.string().nullable().optional(),

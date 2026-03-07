@@ -11,12 +11,22 @@ interface Anomaly {
   amount: number
   average: number
   message: string
+  document_id: string
+  doc_type: string
 }
 
 interface MissingRecurring {
   supplier: string
   lastSeen: string
   message: string
+  document_id: string | null
+  doc_type: string | null
+}
+
+function docPagePath(docType: string | null) {
+  if (docType === 'outgoing_invoice') return '/kundfakturor'
+  if (docType === 'incoming_invoice') return '/leverantorsfakturor'
+  return '/ovriga-dokument'
 }
 
 interface MonthlyBreakdown {
@@ -251,13 +261,11 @@ export default function DashboardPage() {
       )}
 
       <SummaryBoxes boxes={[
-        { label: 'Intäkter', value: stats.income, icon: '💰' },
-        { label: 'Utgående moms', value: stats.income_vat, icon: '🧾' },
-        { label: 'Kostnader', value: stats.expenses, icon: '📦' },
-        { label: 'Ingående moms', value: stats.expenses_vat, icon: '🧾' },
-        { label: 'Resultat', value: stats.result, icon: '📊' },
+        { label: 'Intäkter (ex moms)', value: stats.income, icon: '💰' },
         { label: 'Moms att betala', value: stats.vat_to_pay, icon: '🏦', subtitle: stats.vat_paid_marked > 0 ? `${formatSEK(stats.vat_paid_marked)} markerad som betald` : undefined },
-        { label: 'Inbetald moms', value: stats.vat_payments, icon: '💸', onClick: () => router.push('/ovriga-dokument?kategori=moms') },
+        { label: 'Kostnader', value: stats.expenses, icon: '📦' },
+        { label: 'Resultat', value: stats.result, icon: '📊' },
+        { label: 'Inbetald moms (till SKV)', value: stats.vat_payments, icon: '💸', onClick: () => router.push('/ovriga-dokument?kategori=moms') },
       ]} />
 
       {/* Monthly chart */}
@@ -286,9 +294,14 @@ export default function DashboardPage() {
                     transition={{ delay: i * 0.05 }}
                     className="p-3 bg-orange-500/5 border border-orange-500/20 rounded-lg flex items-center justify-between gap-2"
                   >
-                    <p className="text-orange-300 text-sm">{a.message}</p>
                     <button
-                      onClick={() => dismissAnomaly(a.message)}
+                      onClick={() => router.push(`${docPagePath(a.doc_type)}?doc=${a.document_id}`)}
+                      className="text-orange-300 text-sm text-left hover:text-orange-200 transition-colors"
+                    >
+                      {a.message}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); dismissAnomaly(a.message) }}
                       className="text-gray-600 hover:text-gray-300 transition-colors shrink-0 p-1"
                       title="Dölj"
                     >
@@ -317,9 +330,14 @@ export default function DashboardPage() {
                     transition={{ delay: i * 0.05 }}
                     className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg flex items-center justify-between gap-2"
                   >
-                    <p className="text-blue-300 text-sm">{m.message}</p>
                     <button
-                      onClick={() => dismissMissing(m.message)}
+                      onClick={() => m.document_id && router.push(`${docPagePath(m.doc_type)}?doc=${m.document_id}`)}
+                      className="text-blue-300 text-sm text-left hover:text-blue-200 transition-colors"
+                    >
+                      {m.message}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); dismissMissing(m.message) }}
                       className="text-gray-600 hover:text-gray-300 transition-colors shrink-0 p-1"
                       title="Dölj"
                     >

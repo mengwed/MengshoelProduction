@@ -17,13 +17,18 @@ export default function OvrigaDokumentPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [showUpload, setShowUpload] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterReview, setFilterReview] = useState(false)
+  const [activeFilter, setActiveFilter] = useState<string | null>(null)
+
+  function toggleFilter(key: string) {
+    setActiveFilter(prev => prev === key ? null : key)
+  }
 
   const fetchDocuments = useCallback(async () => {
     const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
     const res = await fetch(`/api/documents?type=other${searchParam}`)
     const json = await res.json()
-    setDocuments(json.data ?? json)
+    const docs = json.data ?? json
+    setDocuments(Array.isArray(docs) ? docs : [])
   }, [searchQuery])
 
   useEffect(() => { fetchDocuments() }, [fetchDocuments])
@@ -31,14 +36,31 @@ export default function OvrigaDokumentPage() {
   const govFees = documents.filter(d => d.type === 'government_fee')
   const loans = documents.filter(d => d.type === 'loan_statement')
   const receipts = documents.filter(d => d.type === 'receipt')
-  const rest = documents.filter(d => !['government_fee', 'loan_statement', 'receipt'].includes(d.type))
+  const insuranceDocs = documents.filter(d => d.type === 'insurance')
+  const statements = documents.filter(d => d.type === 'credit_card_statement')
+  const rest = documents.filter(d => !['government_fee', 'loan_statement', 'receipt', 'insurance', 'credit_card_statement'].includes(d.type))
   const needsReview = documents.filter(d => d.ai_needs_review).length
+  const vatPaidToSkv = documents
+    .filter(d => d.category_name?.toLowerCase() === 'moms')
+    .reduce((sum, d) => sum + (d.total ?? d.amount ?? 0), 0)
 
   let displayDocs = documents
   if (kategoriFilter) {
     displayDocs = documents.filter(d => d.category_name?.toLowerCase() === kategoriFilter.toLowerCase())
-  } else if (filterReview) {
+  } else if (activeFilter === 'government_fee') {
+    displayDocs = govFees
+  } else if (activeFilter === 'loan_statement') {
+    displayDocs = loans
+  } else if (activeFilter === 'receipt') {
+    displayDocs = receipts
+  } else if (activeFilter === 'insurance') {
+    displayDocs = insuranceDocs
+  } else if (activeFilter === 'credit_card_statement') {
+    displayDocs = statements
+  } else if (activeFilter === 'review') {
     displayDocs = documents.filter(d => d.ai_needs_review)
+  } else if (activeFilter === 'moms') {
+    displayDocs = documents.filter(d => d.category_name?.toLowerCase() === 'moms')
   }
 
   return (
@@ -64,10 +86,13 @@ export default function OvrigaDokumentPage() {
       </div>
 
       <SummaryBoxes boxes={[
-        { label: 'Myndighetsavgifter', value: govFees.length, icon: '🏛️', format: 'number' },
-        { label: 'Låneaviseringar', value: loans.length, icon: '🏦', format: 'number' },
-        { label: 'Kvitton', value: receipts.length, icon: '🧾', format: 'number' },
-        { label: 'Att granska', value: needsReview, icon: '⚠️', format: 'number', onClick: () => setFilterReview(f => !f), active: filterReview },
+        { label: 'Myndighetsavgifter', value: govFees.length, icon: '🏛️', format: 'number', onClick: () => toggleFilter('government_fee'), active: activeFilter === 'government_fee' },
+        { label: 'Låneaviseringar', value: loans.length, icon: '🏦', format: 'number', onClick: () => toggleFilter('loan_statement'), active: activeFilter === 'loan_statement' },
+        { label: 'Kvitton', value: receipts.length, icon: '🧾', format: 'number', onClick: () => toggleFilter('receipt'), active: activeFilter === 'receipt' },
+        { label: 'Försäkringar', value: insuranceDocs.length, icon: '🛡️', format: 'number', onClick: () => toggleFilter('insurance'), active: activeFilter === 'insurance' },
+        { label: 'Kontoutdrag', value: statements.length, icon: '🏧', format: 'number', onClick: () => toggleFilter('credit_card_statement'), active: activeFilter === 'credit_card_statement' },
+        { label: 'Att granska', value: needsReview, icon: '⚠️', format: 'number', onClick: () => toggleFilter('review'), active: activeFilter === 'review' },
+        { label: 'Betald moms till SKV', value: vatPaidToSkv, icon: '🏦', onClick: () => toggleFilter('moms'), active: activeFilter === 'moms' },
       ]} />
 
       {showUpload && (
@@ -90,7 +115,7 @@ export default function OvrigaDokumentPage() {
         </div>
       )}
 
-      <DocumentList documents={displayDocs} onUpdate={fetchDocuments} />
+      <DocumentList documents={displayDocs} onUpdate={fetchDocuments} highlightId={searchParams.get('doc') || undefined} />
     </div>
   )
 }

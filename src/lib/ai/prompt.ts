@@ -27,12 +27,12 @@ Ibland skapar KUNDEN (t.ex. SVT, UR, TV4) fakturadokumentet at ${company_name}. 
 VIKTIG REGEL - BEFINTLIGA LEVERANTORER:
 Om counterpart_name matchar en BEFINTLIG LEVERANTOR (se listan langst ner), ska type ALLTID vara "incoming_invoice". Befintliga leverantorer ar redan klassificerade av anvandaren.
 
-TYPBESTAMNING (6 typer):
+TYPBESTAMNING (7 typer):
 1. outgoing_invoice: ${company_name} fakturerar en kund, eller en sjalvfaktura dar ${company_name} far betalt
 2. incoming_invoice: ALLT som ${company_name} betalar for. Inkluderar:
    - Leverantorsfakturor (Fortnox, InExchange, etc.)
    - Kvitton (parkering, mat, programvara, etc.)
-   - Abonnemang (telefon, forsakring, etc.)
+   - Abonnemang (telefon, etc.)
    - Trangselskatt, fordonsskatt och andra avgifter fran Transportstyrelsen
    - Alla andra kostnader dar ${company_name} betalar
 3. government_fee: ENBART Skatteverket-beslut (F-skatt, arbetsgivaravgifter, momsbeslut).
@@ -40,8 +40,20 @@ TYPBESTAMNING (6 typer):
    - INTE trangselskatt eller fordonsskatt (det ar incoming_invoice)
    - counterpart_name ska vara "Skatteverket"
 4. loan_statement: ENBART laneaviseringar (amortering + ranta pa bolan/billan)
-5. credit_card_statement: ENBART bank-/kreditkortsutdrag fran en BANK med FLERA transaktioner listade pa samma dokument. Om dokumentet sager "FAKTURA" eller har EN specifik leverantor/avsandare ar det INTE ett kontoutdrag - da ar det incoming_invoice.
-6. other: Ovrigt som inte passar ovan, t.ex.:
+5. credit_card_statement: Bankkontoutdrag eller kreditkortsutdrag - dokument fran en BANK med FLERA transaktioner listade pa samma dokument. Typiska tecken:
+   - Rubriken "KONTOUTDRAG" eller "Kontoutdrag"
+   - Ingaende saldo och utgaende saldo
+   - Lista med bokforingsdatum, transaktionsdatum, belopp och saldo per rad
+   - Fran banker som Swedbank, SEB, Nordea, Handelsbanken etc.
+   - VIKTIGT: Kontoutdrag ska ALDRIG raknas med i summeringar - de ar enbart informationsdokument
+   - Om dokumentet sager "FAKTURA" eller har EN specifik leverantor/avsandare ar det INTE ett kontoutdrag - da ar det incoming_invoice
+   - counterpart_name ska vara bankens namn (t.ex. "Swedbank AB")
+6. insurance: Forsakringsdokument - fakturor, aviseringar eller brev fran forsakringsbolag (t.ex. Lansforsakringar, Trygg-Hansa, IF, Folksam, Gjensidige, Moderna Forsakringar). Inkluderar:
+   - Forsakringspremier och forsakringsfakturor
+   - Forsakringsbrev och forsakringsbesked
+   - Hemforsakring, foretagsforsakring, fordonsforsakring, ansvarsforsakring
+   - counterpart_name ska vara forsakringsbolagets namn
+7. other: Ovrigt som inte passar ovan, t.ex.:
    - Fondtransaktioner, pensionssparande, vardepapperstransaktioner
    - Kontoutdrag fran vardepappersbolag
    - counterpart_name ska vara forvaltarens/bankens namn
@@ -77,7 +89,7 @@ For kontoutdrag (credit_card_statement): extrahera VARJE transaktion som en sepa
 
 Svara ENBART med giltig JSON (ingen markdown, inga kodblock) i detta format:
 {
-  "type": "outgoing_invoice|incoming_invoice|government_fee|loan_statement|credit_card_statement|other",
+  "type": "outgoing_invoice|incoming_invoice|government_fee|loan_statement|credit_card_statement|insurance|other",
   "invoice_number": "fakturanummer eller null",
   "invoice_date": "YYYY-MM-DD eller null",
   "due_date": "YYYY-MM-DD eller null",

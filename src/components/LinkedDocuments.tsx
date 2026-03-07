@@ -13,6 +13,7 @@ const TYPE_LABELS: Record<string, string> = {
   government_fee: 'Myndighetsavgift',
   loan_statement: 'Låneavisering',
   receipt: 'Kvitto',
+  insurance: 'Försäkring',
   other: 'Övrigt',
 }
 

@@ -6,6 +6,7 @@ export type DocumentType =
   | 'government_fee'
   | 'loan_statement'
   | 'receipt'
+  | 'insurance'
   | 'other'
 
 export type DocumentStatus = 'imported' | 'reviewed' | 'paid'

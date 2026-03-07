@@ -31,6 +31,7 @@ export default function BankavstamningPage() {
   const [showUpload, setShowUpload] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
   const [matchingTxId, setMatchingTxId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchDoc[]>([])
@@ -61,6 +62,7 @@ export default function BankavstamningPage() {
 
     setUploading(true)
     setImportResult(null)
+    setImportError(null)
 
     const formData = new FormData()
     formData.append('file', file)
@@ -72,6 +74,8 @@ export default function BankavstamningPage() {
     if (res.ok) {
       setImportResult(data)
       fetchTransactions()
+    } else {
+      setImportError(data.error || data.message || 'Något gick fel vid importen')
     }
 
     setUploading(false)
@@ -160,7 +164,7 @@ export default function BankavstamningPage() {
         <div className="mb-8 p-6 bg-gray-900 border border-gray-800 rounded-xl">
           <p className="text-gray-400 text-sm mb-4">Ladda upp kontoutdrag (Excel-format)</p>
           <label className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm cursor-pointer">
-            {uploading ? 'Importerar...' : 'Valj Excel-fil'}
+            {uploading ? 'Importerar...' : 'Välj Excel-fil'}
             <input
               type="file"
               accept=".xlsx,.xls"
@@ -169,6 +173,11 @@ export default function BankavstamningPage() {
               disabled={uploading}
             />
           </label>
+          {importError && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-red-400 text-sm">{importError}</p>
+            </div>
+          )}
           {importResult && (
             <div className="mt-4 space-y-2">
               <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">

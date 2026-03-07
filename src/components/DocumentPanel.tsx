@@ -12,6 +12,7 @@ const TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
   { value: 'government_fee', label: 'Myndighetsavgift' },
   { value: 'loan_statement', label: 'Låneavisering' },
   { value: 'receipt', label: 'Kvitto' },
+  { value: 'insurance', label: 'Försäkring' },
   { value: 'other', label: 'Övrigt' },
 ]
 
