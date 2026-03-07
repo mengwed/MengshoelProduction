@@ -159,7 +159,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
     setAttachments(prev => prev.filter(a => a.id !== attachment.id))
   }
 
-  const inputClass = "w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+  const inputClass = "w-full px-2 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
   const isOutgoing = type === 'outgoing_invoice'
 
   return (
@@ -187,7 +187,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
         {/* Body: PDF left, form right */}
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
           {/* PDF viewer */}
-          <div className="hidden md:block w-1/2 border-r border-gray-800 bg-gray-900">
+          <div className="hidden md:block w-3/5 border-r border-gray-800 bg-gray-900">
             {pdfUrl === 'error' ? (
               <div className="flex items-center justify-center h-full text-red-400">
                 Kunde inte ladda PDF
@@ -202,7 +202,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
           </div>
 
           {/* Form */}
-          <div className="flex-1 md:w-1/2 overflow-y-auto p-4 md:p-6">
+          <div className="flex-1 md:w-2/5 overflow-y-auto p-4 md:p-4">
             {/* Mobile PDF button */}
             {pdfUrl && pdfUrl !== 'error' && (
               <a
@@ -218,7 +218,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
             {doc.ai_needs_review && doc.ai_extracted_data && (() => {
               const reasons = (doc.ai_extracted_data as Record<string, unknown>).review_reasons as string[] | undefined
               return (
-                <div className="mb-5 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <div className="mb-3 p-2.5 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                   <p className="text-yellow-400 text-sm font-medium mb-1">AI behöver granskning</p>
                   {reasons && reasons.length > 0 && (
                     <ul className="text-yellow-400/70 text-xs list-disc list-inside">
@@ -231,7 +231,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
               )
             })()}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-4">
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Typ</label>
                 <CustomSelect
@@ -319,12 +319,12 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
                 checked={vatPaid}
                 onChange={setVatPaid}
                 label="Har överfört pengar till momskontot. Kom ihåg att ladda upp momsdragningen från banken!"
-                className="mb-6"
+                className="mb-4"
               />
             )}
 
             {/* Attachments section */}
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-xs text-gray-400 mb-2 uppercase tracking-wider">Bifogade filer</label>
               {attachments.length > 0 && (
                 <div className="space-y-2 mb-3">
