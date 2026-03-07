@@ -15,6 +15,11 @@ body {
   color: var(--foreground);
 }
 
+button,
+[role="button"] {
+  cursor: pointer;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
