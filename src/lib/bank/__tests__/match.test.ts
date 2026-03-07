@@ -7,6 +7,7 @@ describe('scoreMatch', () => {
     invoice_number: '12345',
     total: 1500,
     amount: 1200,
+    vat: 300,
     invoice_date: '2025-06-15',
     type: 'incoming_invoice',
     suppliers: { name: 'Fortnox AB' },
