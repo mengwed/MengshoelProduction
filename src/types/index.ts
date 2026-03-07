@@ -105,10 +105,20 @@ export interface BankTransaction {
   balance: number | null
   matched_document_id: string | null
   match_confidence: number | null
+  ai_suggestion_id: string | null
+  ai_confidence: number | null
+  ai_explanation: string | null
+  match_status: 'pending' | 'approved' | 'rejected' | 'manual' | null
   import_batch_id: string
   created_at: string
   // Joined fields
   documents?: {
+    file_name: string
+    type: string
+    invoice_number: string | null
+    total: number | null
+  } | null
+  ai_suggestion?: {
     file_name: string
     type: string
     invoice_number: string | null
