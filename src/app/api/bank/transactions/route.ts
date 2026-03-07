@@ -19,7 +19,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('bank_transactions')
-      .select('*, documents(file_name, type, invoice_number, total)')
+      .select('*, documents(file_name, type, invoice_number, total), ai_suggestion:documents!ai_suggestion_id(file_name, type, invoice_number, total)')
       .eq('fiscal_year_id', fiscalYear.id)
       .order('booking_date', { ascending: false })
 
