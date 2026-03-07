@@ -30,6 +30,7 @@ export default function SettingsPage() {
         owner_name: settings.owner_name,
         industry: settings.industry,
         notes: settings.notes,
+        show_reparse_button: settings.show_reparse_button,
       }),
     })
 
@@ -98,6 +99,30 @@ export default function SettingsPage() {
             rows={3}
             className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:border-purple-500 focus:outline-none resize-none"
           />
+        </div>
+
+        <div className="border-t border-gray-700 pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-gray-300">Visa &quot;Analysera om alla&quot;-knappen</span>
+              <p className="text-xs text-gray-500 mt-0.5">Visar knappen f&ouml;r att analysera om alla dokument med AI</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={settings.show_reparse_button}
+              onClick={() => setSettings({ ...settings, show_reparse_button: !settings.show_reparse_button })}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                settings.show_reparse_button ? 'bg-purple-600' : 'bg-gray-600'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  settings.show_reparse_button ? 'translate-x-5' : 'translate-x-0.5'
+                } mt-0.5`}
+              />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">

@@ -42,6 +42,7 @@ export async function PUT(request: Request) {
           owner_name: body.owner_name ?? null,
           industry: body.industry ?? null,
           notes: body.notes ?? null,
+          show_reparse_button: body.show_reparse_button ?? false,
           updated_at: new Date().toISOString(),
         })
         .eq('id', existing.id)
@@ -59,6 +60,7 @@ export async function PUT(request: Request) {
           owner_name: body.owner_name ?? null,
           industry: body.industry ?? null,
           notes: body.notes ?? null,
+          show_reparse_button: body.show_reparse_button ?? false,
         })
         .select()
         .single()

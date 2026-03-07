@@ -172,6 +172,7 @@ export interface CompanySettings {
   owner_name: string | null
   industry: string | null
   notes: string | null
+  show_reparse_button: boolean
   created_at: string
   updated_at: string
 }

@@ -18,6 +18,14 @@ export default function OvrigaDokumentPage() {
   const [showUpload, setShowUpload] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
+  const [showReparseButton, setShowReparseButton] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/settings').then(r => r.json()).then(j => {
+      const s = j.data ?? j
+      setShowReparseButton(s.show_reparse_button ?? false)
+    })
+  }, [])
 
   function toggleFilter(key: string) {
     setActiveFilter(prev => prev === key ? null : key)
@@ -68,7 +76,7 @@ export default function OvrigaDokumentPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <h1 className="text-2xl font-bold text-white">Övriga dokument</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <ReparseAllButton onComplete={fetchDocuments} />
+          {showReparseButton && <ReparseAllButton onComplete={fetchDocuments} />}
           <SearchInput onSearch={setSearchQuery} placeholder="Sök dokument..." />
           <a
             href="/api/documents/export?type=other"

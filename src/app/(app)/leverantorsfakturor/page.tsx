@@ -16,6 +16,14 @@ export default function LeverantörsfakturorPage() {
   const [showUpload, setShowUpload] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterReview, setFilterReview] = useState(false)
+  const [showReparseButton, setShowReparseButton] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/settings').then(r => r.json()).then(j => {
+      const s = j.data ?? j
+      setShowReparseButton(s.show_reparse_button ?? false)
+    })
+  }, [])
 
   const fetchDocuments = useCallback(async () => {
     const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''
@@ -35,7 +43,7 @@ export default function LeverantörsfakturorPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <h1 className="text-2xl font-bold text-white">Leverantörsfakturor</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <ReparseAllButton onComplete={fetchDocuments} />
+          {showReparseButton && <ReparseAllButton onComplete={fetchDocuments} />}
           <SearchInput onSearch={setSearchQuery} placeholder="Sök dokument..." />
           <a
             href="/api/documents/export?type=incoming"
