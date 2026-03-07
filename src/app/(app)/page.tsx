@@ -65,6 +65,8 @@ function formatSEK(n: number) {
 }
 
 function MonthlyChart({ data }: { data: MonthlyBreakdown[] }) {
+  const [hoveredMonth, setHoveredMonth] = useState<string | null>(null)
+
   if (data.length === 0) return null
   const maxVal = Math.max(...data.flatMap(d => [d.income, d.expenses]), 1)
 
@@ -80,21 +82,32 @@ function MonthlyChart({ data }: { data: MonthlyBreakdown[] }) {
         {data.map((d, i) => {
           const mm = d.month.split('-')[1]
           return (
-            <div key={d.month} className="flex-1 flex flex-col items-center gap-1">
+            <div
+              key={d.month}
+              className="flex-1 flex flex-col items-center gap-1 relative"
+              onMouseEnter={() => setHoveredMonth(d.month)}
+              onMouseLeave={() => setHoveredMonth(null)}
+            >
+              {hoveredMonth === d.month && (
+                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 shadow-xl whitespace-nowrap pointer-events-none">
+                  <p className="text-xs font-medium text-white mb-1">{monthNames[mm] || mm}</p>
+                  <p className="text-xs text-green-400">Intäkter: {formatSEK(d.income)}</p>
+                  <p className="text-xs text-pink-400">Kostnader: {formatSEK(d.expenses)}</p>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 border-r border-b border-gray-700 rotate-45 -mt-1" />
+                </div>
+              )}
               <div className="flex gap-0.5 items-end w-full justify-center h-36">
                 <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: `${(d.income / maxVal) * 100}%` }}
                   transition={{ delay: i * 0.05, duration: 0.5 }}
                   className="w-3 bg-gradient-to-t from-green-600 to-green-400 rounded-t"
-                  title={`Intäkter: ${formatSEK(d.income)}`}
                 />
                 <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: `${(d.expenses / maxVal) * 100}%` }}
                   transition={{ delay: i * 0.05 + 0.1, duration: 0.5 }}
                   className="w-3 bg-gradient-to-t from-pink-600 to-pink-400 rounded-t"
-                  title={`Kostnader: ${formatSEK(d.expenses)}`}
                 />
               </div>
               <span className="text-xs text-gray-500">{monthNames[mm] || mm}</span>
