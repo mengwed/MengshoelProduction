@@ -55,6 +55,8 @@ export async function PATCH(
         default:
           return apiError(`Unknown action: ${body.action}`, 400)
       }
+    } else if ('comment' in body) {
+      update.comment = body.comment || null
     } else if ('matched_document_id' in body) {
       // Backward compatibility
       update.matched_document_id = body.matched_document_id

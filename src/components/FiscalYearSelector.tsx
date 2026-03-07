@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import type { FiscalYear } from '@/types'
 import CustomSelect from '@/components/CustomSelect'
 
@@ -9,43 +10,74 @@ export default function FiscalYearSelector() {
   const [activeId, setActiveId] = useState<number | null>(null)
   const [adding, setAdding] = useState(false)
   const [newYear, setNewYear] = useState('')
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     fetchYears()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  function fetchYears() {
-    fetch('/api/fiscal-years')
-      .then(r => r.json())
-      .then((json) => {
-        const data: FiscalYear[] = json.data ?? json
-        setYears(data)
-        const active = data.find(y => y.is_active)
-        if (active) {
-          setActiveId(active.id)
-        } else {
-          // No year is active — default to current year if it exists
-          const currentYearEntry = data.find(y => y.year === new Date().getFullYear())
-          if (currentYearEntry) {
-            setActiveId(currentYearEntry.id)
-            fetch('/api/fiscal-years', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ year_id: currentYearEntry.id }),
-            })
-          }
+  async function fetchYears() {
+    const res = await fetch('/api/fiscal-years')
+    const json = await res.json()
+    const data: FiscalYear[] = json.data ?? json
+    setYears(data)
+
+    const urlYear = searchParams.get('year')
+    const urlYearEntry = urlYear ? data.find(y => y.year === parseInt(urlYear)) : null
+
+    if (urlYearEntry) {
+      // URL has a year param — sync to DB if needed
+      const currentActive = data.find(y => y.is_active)
+      if (currentActive?.id !== urlYearEntry.id) {
+        await fetch('/api/fiscal-years', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ year_id: urlYearEntry.id }),
+        })
+      }
+      setActiveId(urlYearEntry.id)
+    } else {
+      // No year in URL — use active from DB and add to URL
+      const active = data.find(y => y.is_active)
+      if (active) {
+        setActiveId(active.id)
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('year', String(active.year))
+        router.replace(`${pathname}?${params.toString()}`)
+      } else {
+        const currentYearEntry = data.find(y => y.year === new Date().getFullYear())
+        if (currentYearEntry) {
+          setActiveId(currentYearEntry.id)
+          await fetch('/api/fiscal-years', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ year_id: currentYearEntry.id }),
+          })
+          const params = new URLSearchParams(searchParams.toString())
+          params.set('year', String(currentYearEntry.year))
+          router.replace(`${pathname}?${params.toString()}`)
         }
-      })
+      }
+    }
   }
 
   async function handleChange(id: number) {
     setActiveId(id)
+    const selectedYear = years.find(y => y.id === id)
     await fetch('/api/fiscal-years', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ year_id: id }),
     })
-    window.location.reload()
+    if (selectedYear) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('year', String(selectedYear.year))
+      router.push(`${pathname}?${params.toString()}`)
+      router.refresh()
+    }
   }
 
   async function handleAdd() {

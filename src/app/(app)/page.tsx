@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import type { Document } from '@/types'
 import SummaryBoxes from '@/components/SummaryBoxes'
@@ -201,6 +201,8 @@ function GlobalSearch() {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const year = searchParams.get('year')
   const [stats, setStats] = useState<DashboardData | null>(null)
   const [reviewDocs, setReviewDocs] = useState<Document[]>([])
   const [dismissedAnomalies, setDismissedAnomalies] = useState<Set<string>>(new Set())
@@ -218,7 +220,7 @@ export default function DashboardPage() {
       if (da) setDismissedAnomalies(new Set(JSON.parse(da)))
       if (dm) setDismissedMissing(new Set(JSON.parse(dm)))
     } catch {}
-  }, [])
+  }, [year])
 
   function dismissAnomaly(key: string) {
     setDismissedAnomalies(prev => {

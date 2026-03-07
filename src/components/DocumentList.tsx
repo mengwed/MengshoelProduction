@@ -30,16 +30,17 @@ const STATUS_LABELS: Record<string, string> = {
   paid: 'Betald',
 }
 
-type SortKey = 'date' | 'type' | 'name' | 'invoice_number' | 'amount' | 'vat' | 'category' | 'status' | 'ai'
+type SortKey = 'date' | 'type' | 'name' | 'invoice_number' | 'amount' | 'vat' | 'total' | 'category' | 'status' | 'ai'
 type SortDir = 'asc' | 'desc'
 
 interface Props {
   documents: Document[]
   onUpdate: () => void
   highlightId?: string
+  hideStatus?: boolean
 }
 
-export default function DocumentList({ documents, onUpdate, highlightId }: Props) {
+export default function DocumentList({ documents, onUpdate, highlightId, hideStatus }: Props) {
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -72,6 +73,8 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
           return mult * ((a.amount ?? 0) - (b.amount ?? 0))
         case 'vat':
           return mult * ((a.vat ?? 0) - (b.vat ?? 0))
+        case 'total':
+          return mult * (((a.amount ?? 0) + (a.vat ?? 0)) - ((b.amount ?? 0) + (b.vat ?? 0)))
         case 'category':
           return mult * ((a.category_name ?? '').localeCompare(b.category_name ?? ''))
         case 'status':
@@ -148,7 +151,7 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
               key={doc.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: i * 0.02 }}
+              transition={{ delay: i < 20 ? i * 0.02 : 0 }}
               onClick={() => setSelectedDoc(doc)}
               className="p-4 bg-gray-900 border border-gray-800 rounded-xl active:bg-gray-800 transition-colors cursor-pointer"
             >
@@ -175,10 +178,12 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
                   {doc.type === 'outgoing_invoice' && doc.vat_paid && (
                     <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">Moms betald</span>
                   )}
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[doc.status]}`}>
-                    {STATUS_LABELS[doc.status]}
-                  </span>
-                  {doc.ai_needs_review && (
+                  {!hideStatus && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[doc.status]}`}>
+                      {STATUS_LABELS[doc.status]}
+                    </span>
+                  )}
+                  {!hideStatus && doc.ai_needs_review && (
                     <span className="text-yellow-400 text-xs">⚠️</span>
                   )}
                 </div>
@@ -200,9 +205,10 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
                 <SortHeader label="Fakturanr" col="invoice_number" />
                 <SortHeader label="Belopp" col="amount" align="right" />
                 <SortHeader label="Moms" col="vat" align="right" />
+                <SortHeader label="Ink moms" col="total" align="right" />
                 <SortHeader label="Kategori" col="category" />
-                <SortHeader label="Status" col="status" align="center" />
-                <SortHeader label="AI" col="ai" align="center" />
+                {!hideStatus && <SortHeader label="Status" col="status" align="center" />}
+                {!hideStatus && <SortHeader label="AI" col="ai" align="center" />}
               </tr>
             </thead>
             <tbody>
@@ -211,7 +217,7 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
                   key={doc.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.02 }}
+                  transition={{ delay: i < 20 ? i * 0.02 : 0 }}
                   onClick={() => setSelectedDoc(doc)}
                   className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer"
                 >
@@ -236,6 +242,9 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
                       <span className="ml-1.5 px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium whitespace-nowrap" title="Moms betald">Betald</span>
                     )}
                   </td>
+                  <td className="px-4 py-3 text-white text-sm text-right font-mono">
+                    {formatAmount((doc.amount ?? 0) + (doc.vat ?? 0))}
+                  </td>
                   <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                     <CategoryPicker
                       value={doc.category_id}
@@ -249,18 +258,22 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
                       }}
                     />
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[doc.status]}`}>
-                      {STATUS_LABELS[doc.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {doc.ai_needs_review ? (
-                      <span className="text-yellow-400 text-sm" title="Behöver granskas">⚠️</span>
-                    ) : (
-                      <span className="text-green-400 text-sm">{doc.ai_confidence}%</span>
-                    )}
-                  </td>
+                  {!hideStatus && (
+                    <td className="px-4 py-3 text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[doc.status]}`}>
+                        {STATUS_LABELS[doc.status]}
+                      </span>
+                    </td>
+                  )}
+                  {!hideStatus && (
+                    <td className="px-4 py-3 text-center">
+                      {doc.ai_needs_review ? (
+                        <span className="text-yellow-400 text-sm" title="Behöver granskas">⚠️</span>
+                      ) : (
+                        <span className="text-green-400 text-sm">{doc.ai_confidence}%</span>
+                      )}
+                    </td>
+                  )}
                 </motion.tr>
               ))}
             </tbody>

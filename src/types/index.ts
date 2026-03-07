@@ -112,6 +112,7 @@ export interface BankTransaction {
   ai_confidence: number | null
   ai_explanation: string | null
   match_status: 'pending' | 'approved' | 'rejected' | 'manual' | 'ignored' | null
+  comment: string | null
   import_batch_id: string
   created_at: string
   // Joined fields

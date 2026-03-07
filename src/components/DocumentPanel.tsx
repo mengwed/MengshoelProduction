@@ -6,6 +6,11 @@ import type { Document, DocumentType, DocumentStatus, Customer, Supplier, Catego
 import CustomSelect from '@/components/CustomSelect'
 import CustomCheckbox from '@/components/CustomCheckbox'
 
+// Simple module-level cache for reference data that rarely changes
+let cachedCustomers: Customer[] | null = null
+let cachedSuppliers: Supplier[] | null = null
+let cachedCategories: Category[] | null = null
+
 const TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
   { value: 'outgoing_invoice', label: 'Kundfaktura' },
   { value: 'incoming_invoice', label: 'Leverantörsfaktura' },
@@ -56,12 +61,21 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [reparsing, setReparsing] = useState(false)
+  const [bankTransactions, setBankTransactions] = useState<{ id: string; booking_date: string; transaction_type: string | null; reference: string | null; amount: number }[]>([])
 
   useEffect(() => {
-    fetch('/api/customers').then(r => r.json()).then(d => setCustomers(d.data ?? d))
-    fetch('/api/suppliers').then(r => r.json()).then(d => setSuppliers(d.data ?? d))
-    fetch('/api/categories').then(r => r.json()).then(d => setCategories(d.data ?? d))
+    // Use cached reference data if available, otherwise fetch and cache
+    if (cachedCustomers) { setCustomers(cachedCustomers) } else {
+      fetch('/api/customers').then(r => r.json()).then(d => { cachedCustomers = d.data ?? d; setCustomers(cachedCustomers!) })
+    }
+    if (cachedSuppliers) { setSuppliers(cachedSuppliers) } else {
+      fetch('/api/suppliers').then(r => r.json()).then(d => { cachedSuppliers = d.data ?? d; setSuppliers(cachedSuppliers!) })
+    }
+    if (cachedCategories) { setCategories(cachedCategories) } else {
+      fetch('/api/categories').then(r => r.json()).then(d => { cachedCategories = d.data ?? d; setCategories(cachedCategories!) })
+    }
     fetch(`/api/documents/${doc.id}/attachments`).then(r => r.json()).then(d => setAttachments(d.data ?? []))
+    fetch(`/api/documents/${doc.id}/bank-transactions`).then(r => r.json()).then(d => setBankTransactions(d.data ?? []))
     fetch(`/api/documents/${doc.id}/pdf-url`)
       .then(r => r.json())
       .then(d => {
@@ -328,6 +342,32 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
                   onChange={setVatPaid}
                   label="Har överfört pengar till momskontot. Kom ihåg att ladda upp momsdragningen från banken!"
                 />
+              </div>
+            )}
+
+            {/* Bank reconciliation links */}
+            {bankTransactions.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-xs text-gray-400 mb-2 uppercase tracking-wider">Bankavstämning</label>
+                <div className="space-y-1.5">
+                  {bankTransactions.map(bt => (
+                    <div key={bt.id} className="flex items-center gap-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <span className="text-green-400 text-sm shrink-0">🏦</span>
+                      <span className="text-gray-300 text-xs">
+                        {new Date(bt.booking_date).toLocaleDateString('sv-SE')}
+                      </span>
+                      {bt.transaction_type && (
+                        <span className="text-gray-400 text-xs">{bt.transaction_type}</span>
+                      )}
+                      {bt.reference && (
+                        <span className="text-gray-400 text-xs truncate">{bt.reference}</span>
+                      )}
+                      <span className={`text-xs font-mono ml-auto shrink-0 ${bt.amount >= 0 ? 'text-green-400' : 'text-white'}`}>
+                        {new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(bt.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

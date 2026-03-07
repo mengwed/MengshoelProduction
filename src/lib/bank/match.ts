@@ -27,11 +27,34 @@ export interface MatchResult {
   suggested_confidence?: number
 }
 
+// Extract potential invoice numbers from a bank reference string
+// Handles patterns like "Moms 1368 UR", "Faktura 1368", "UR 1368", "Moms UR 1368" etc.
+function extractInvoiceNumbers(reference: string): string[] {
+  const numbers: string[] = []
+  // Match standalone numbers (3-6 digits) that could be invoice numbers
+  const matches = reference.match(/\b(\d{3,6})\b/g)
+  if (matches) {
+    numbers.push(...matches)
+  }
+  return numbers
+}
+
 export function scoreMatch(tx: TransactionInput, doc: DocumentMatch): number {
   // 1. Exact reference match
   if (tx.reference && doc.invoice_number) {
     if (tx.reference.trim() === doc.invoice_number) return 0.95
     if (tx.reference.includes(doc.invoice_number)) return 0.80
+  }
+
+  // 2. Extract invoice numbers from reference (e.g. "Moms 1368 UR" → ["1368"])
+  if (tx.reference && doc.invoice_number) {
+    const extracted = extractInvoiceNumbers(tx.reference)
+    if (extracted.includes(doc.invoice_number)) {
+      // Higher confidence for outgoing invoices (customer payments/VAT transfers)
+      const isMomsOrUr = /moms|ur\b/i.test(tx.reference)
+      if (doc.type === 'outgoing_invoice' && isMomsOrUr) return 0.85
+      return 0.75
+    }
   }
 
   const txAmount = Math.abs(tx.amount)
@@ -40,7 +63,7 @@ export function scoreMatch(tx: TransactionInput, doc: DocumentMatch): number {
   const amountMatch = (docTotal > 0 && Math.abs(txAmount - docTotal) < 0.01) ||
     (docAmountPlusVat > 0 && Math.abs(txAmount - docAmountPlusVat) < 0.01)
 
-  // 2. Amount + date proximity
+  // 3. Amount + date proximity
   if (amountMatch && doc.invoice_date) {
     const txDate = new Date(tx.booking_date)
     const docDate = new Date(doc.invoice_date)
@@ -49,7 +72,7 @@ export function scoreMatch(tx: TransactionInput, doc: DocumentMatch): number {
     if (daysDiff <= 30) return 0.60
   }
 
-  // 3. Supplier/customer name in reference
+  // 4. Supplier/customer name in reference
   if (tx.reference) {
     const refLower = tx.reference.toLowerCase()
     const name = (doc.suppliers?.name || doc.customers?.name || '').trim()
@@ -67,10 +90,10 @@ export async function matchTransactions(
 ): Promise<Array<{ transaction: typeof transactions[number]; matched_document_id: string | null; match_confidence: number | null }>> {
   const supabase = createServiceClient()
 
+  // Search all fiscal years so we can match e.g. "Moms 1368 UR" to invoices from prior years
   const { data: documents } = await supabase
     .from('documents')
     .select('id, invoice_number, total, amount, vat, invoice_date, type, suppliers(name), customers(name)')
-    .eq('fiscal_year_id', fiscalYearId)
 
   if (!documents) {
     return transactions.map(t => ({ transaction: t, matched_document_id: null, match_confidence: null }))

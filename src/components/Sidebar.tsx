@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { logout } from '@/app/login/actions'
 import FiscalYearSelector from '@/components/FiscalYearSelector'
@@ -21,6 +21,12 @@ const navItems = [
 
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const yearParam = searchParams.get('year')
+
+  function hrefWithYear(href: string) {
+    return yearParam ? `${href}?year=${yearParam}` : href
+  }
 
   return (
     <>
@@ -34,7 +40,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={hrefWithYear(item.href)}
               onClick={onNavClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
                 isActive

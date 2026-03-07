@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const customerId = searchParams.get('customer_id')
     const categoryId = searchParams.get('category_id')
     const search = searchParams.get('search')
+    const allYears = searchParams.get('all_years')
 
     let query = supabase
       .from('documents')
@@ -39,7 +40,10 @@ export async function GET(request: NextRequest) {
         document_attachments(id)
       `)
       .order('invoice_date', { ascending: false })
-      .eq('fiscal_year_id', fiscalYear.id)
+
+    if (allYears !== 'true') {
+      query = query.eq('fiscal_year_id', fiscalYear.id)
+    }
 
     if (type === 'outgoing') {
       query = query.eq('type', 'outgoing_invoice')
@@ -74,15 +78,30 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      const term = `%${search}%`
+      // Normalize to NFC to handle macOS NFD file names vs composed search input
+      const normalized = search.normalize('NFC')
+      const term = `%${normalized}%`
+
+      // Also create an ASCII-folded version (ä→a, ö→o, å→a) for fallback matching
+      const asciiTerm = `%${normalized.replace(/[åÅ]/g, m => m === 'å' ? 'a' : 'A').replace(/[äÄ]/g, m => m === 'ä' ? 'a' : 'A').replace(/[öÖ]/g, m => m === 'ö' ? 'o' : 'O')}%`
+      // And the NFD version in case the DB has decomposed characters
+      const nfdTerm = `%${search.normalize('NFD')}%`
 
       // Find matching supplier/customer IDs first
       const [{ data: matchingSuppliers }, { data: matchingCustomers }] = await Promise.all([
-        supabase.from('suppliers').select('id').ilike('name', term),
-        supabase.from('customers').select('id').ilike('name', term),
+        supabase.from('suppliers').select('id').or(`name.ilike.${term},name.ilike.${asciiTerm},name.ilike.${nfdTerm}`),
+        supabase.from('customers').select('id').or(`name.ilike.${term},name.ilike.${asciiTerm},name.ilike.${nfdTerm}`),
       ])
 
-      const orFilters = [`file_name.ilike.${term}`, `invoice_number.ilike.${term}`]
+      const orFilters = [
+        `file_name.ilike.${term}`,
+        `file_name.ilike.${nfdTerm}`,
+        `invoice_number.ilike.${term}`,
+      ]
+      // Add ASCII fallback if it differs from the original
+      if (asciiTerm !== term) {
+        orFilters.push(`file_name.ilike.${asciiTerm}`)
+      }
 
       // Allow searching by amount, total, and vat (range ±10 for rounding)
       const numericSearch = parseFloat(search.replace(/\s/g, '').replace(/,/g, '.'))

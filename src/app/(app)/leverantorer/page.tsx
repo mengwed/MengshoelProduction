@@ -130,7 +130,7 @@ export default function SuppliersPage() {
               key={supplier.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: i * 0.03 }}
+              transition={{ delay: i < 20 ? i * 0.02 : 0 }}
               className={`p-4 bg-gray-900 border border-gray-800 rounded-xl ${!supplier.is_active ? 'opacity-50' : ''}`}
             >
               <div className="flex items-center justify-between">
@@ -183,7 +183,7 @@ export default function SuppliersPage() {
                   key={supplier.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.03 }}
+                  transition={{ delay: i < 20 ? i * 0.02 : 0 }}
                   className={`border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer group ${!supplier.is_active ? 'opacity-50' : ''}`}
                   onClick={() => setExpandedId(expandedId === supplier.id ? null : supplier.id)}
                 >

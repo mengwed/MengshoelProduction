@@ -12,10 +12,12 @@ import ReparseAllButton from '@/components/ReparseAllButton'
 export default function KundfakturorPage() {
   const searchParams = useSearchParams()
   const highlightId = searchParams.get('doc') || undefined
+  const year = searchParams.get('year')
   const [documents, setDocuments] = useState<Document[]>([])
   const [showUpload, setShowUpload] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterReview, setFilterReview] = useState(false)
+  const [hideStatus, setHideStatus] = useState(true)
   const [showReparseButton, setShowReparseButton] = useState(false)
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function KundfakturorPage() {
     const res = await fetch(`/api/documents?type=outgoing${searchParam}`)
     const json = await res.json()
     setDocuments(json.data ?? json)
-  }, [searchQuery])
+  }, [searchQuery, year])
 
   useEffect(() => { fetchDocuments() }, [fetchDocuments])
 
@@ -64,6 +66,7 @@ export default function KundfakturorPage() {
       <SummaryBoxes boxes={[
         { label: 'Fakturerat (ex moms)', value: totalInvoiced, icon: '💰' },
         { label: 'Moms', value: totalVat, icon: '🧾' },
+        { label: 'Ink moms', value: totalInvoiced + totalVat, icon: '💵' },
         { label: 'Antal', value: documents.length, icon: '📄', format: 'number' },
         { label: 'Att granska', value: needsReview, icon: '⚠️', format: 'number', onClick: () => setFilterReview(f => !f), active: filterReview },
       ]} />
@@ -74,7 +77,17 @@ export default function KundfakturorPage() {
         </div>
       )}
 
-      <DocumentList documents={filterReview ? documents.filter(d => d.ai_needs_review) : documents} onUpdate={fetchDocuments} highlightId={highlightId} />
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setHideStatus(v => !v)}
+          className={`relative w-10 h-5 rounded-full transition-colors ${hideStatus ? 'bg-purple-600' : 'bg-gray-700'}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${hideStatus ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+        <span className="text-sm text-gray-400">Dölj status</span>
+      </div>
+
+      <DocumentList documents={filterReview ? documents.filter(d => d.ai_needs_review) : documents} onUpdate={fetchDocuments} highlightId={highlightId} hideStatus={hideStatus} />
     </div>
   )
 }

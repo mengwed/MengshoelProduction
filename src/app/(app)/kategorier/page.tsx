@@ -83,7 +83,7 @@ export default function CategoriesPage() {
             layout
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
+            transition={{ delay: i < 20 ? i * 0.03 : 0 }}
             className={`p-4 bg-gray-900 border rounded-xl transition-colors cursor-pointer group ${
               expandedId === cat.id ? 'border-purple-500/50 col-span-full' : 'border-gray-800 hover:border-gray-700'
             }`}

@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import SummaryBoxes from '@/components/SummaryBoxes'
 import type { BankTransaction } from '@/types'
 
-type Filter = 'all' | 'pending' | 'approved' | 'unmatched' | 'ignored'
+type Filter = 'all' | 'pending' | 'approved' | 'unmatched' | 'ignored' | 'commented'
 
 interface ImportResult {
   imported: number
@@ -28,6 +29,8 @@ interface SearchDoc {
 }
 
 export default function BankavstamningPage() {
+  const searchParams = useSearchParams()
+  const year = searchParams.get('year')
   const [transactions, setTransactions] = useState<BankTransaction[]>([])
   const [filter, setFilter] = useState<Filter>('all')
   const [showUpload, setShowUpload] = useState(false)
@@ -42,6 +45,8 @@ export default function BankavstamningPage() {
   const [retrying, setRetrying] = useState(false)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [pdfName, setPdfName] = useState<string | null>(null)
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [commentDraft, setCommentDraft] = useState('')
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
@@ -53,7 +58,7 @@ export default function BankavstamningPage() {
 
   useEffect(() => {
     fetchTransactions()
-  }, [])
+  }, [year])
 
   async function fetchTransactions() {
     const res = await fetch('/api/bank/transactions')
@@ -121,7 +126,7 @@ export default function BankavstamningPage() {
 
   const searchDocuments = useCallback(async (query: string) => {
     if (query.length < 2) { setSearchResults([]); return }
-    const res = await fetch(`/api/documents?search=${encodeURIComponent(query)}`)
+    const res = await fetch(`/api/documents?search=${encodeURIComponent(query)}&all_years=true`)
     const json = await res.json()
     setSearchResults((json.data ?? json).slice(0, 10))
   }, [])
@@ -150,11 +155,13 @@ export default function BankavstamningPage() {
   const ignored = transactions.filter(t => t.match_status === 'ignored')
   const unmatched = transactions.filter(t => !t.matched_document_id && t.match_status !== 'pending' && t.match_status !== 'ignored')
   const matched = transactions.filter(t => t.matched_document_id || t.match_status === 'pending')
+  const commented = transactions.filter(t => t.comment)
 
   const filtered = filter === 'pending' ? pending
     : filter === 'approved' ? approved
     : filter === 'unmatched' ? unmatched
     : filter === 'ignored' ? ignored
+    : filter === 'commented' ? commented
     : transactions
 
   const filterTabs: { key: Filter; label: string; count: number }[] = [
@@ -211,6 +218,79 @@ export default function BankavstamningPage() {
       setPdfUrl(url)
       setPdfName(name)
     }
+  }
+
+  async function handleSaveComment(txId: string, comment: string) {
+    await fetch(`/api/bank/transactions/${txId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment: comment.trim() }),
+    })
+    setTransactions(prev => prev.map(tx => tx.id === txId ? { ...tx, comment: comment.trim() || null } : tx))
+    setEditingCommentId(null)
+    setCommentDraft('')
+  }
+
+  function startEditComment(tx: BankTransaction) {
+    setEditingCommentId(tx.id)
+    setCommentDraft(tx.comment || '')
+  }
+
+  function renderCommentCell(tx: BankTransaction) {
+    if (editingCommentId === tx.id) {
+      return (
+        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+          <input
+            type="text"
+            value={commentDraft}
+            onChange={e => setCommentDraft(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') handleSaveComment(tx.id, commentDraft)
+              if (e.key === 'Escape') { setEditingCommentId(null); setCommentDraft('') }
+            }}
+            className="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-purple-500 focus:outline-none"
+            placeholder="Skriv kommentar..."
+            autoFocus
+          />
+          <button
+            onClick={() => handleSaveComment(tx.id, commentDraft)}
+            className="text-green-400 hover:text-green-300 text-xs px-1 shrink-0"
+          >
+            Spara
+          </button>
+        </div>
+      )
+    }
+
+    if (tx.comment) {
+      return (
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => startEditComment(tx)}
+            className="text-gray-300 text-sm hover:text-white text-left truncate max-w-[180px]"
+            title={tx.comment}
+          >
+            {tx.comment}
+          </button>
+          <button
+            onClick={() => handleSaveComment(tx.id, '')}
+            className="text-gray-600 hover:text-red-400 text-xs shrink-0 px-0.5"
+            title="Ta bort kommentar"
+          >
+            ✕
+          </button>
+        </div>
+      )
+    }
+
+    return (
+      <button
+        onClick={() => startEditComment(tx)}
+        className="text-gray-600 hover:text-gray-400 text-sm"
+      >
+        + Kommentar
+      </button>
+    )
   }
 
   function renderDocLink(name: string, docId: string | null | undefined, className: string) {
@@ -353,10 +433,19 @@ export default function BankavstamningPage() {
       })()}
 
       <SummaryBoxes boxes={[
-        { label: 'Transaktioner', value: transactions.length, icon: '🏦', format: 'number' },
-        { label: 'Matchade', value: matched.length, icon: '✅', format: 'number' },
-        { label: 'Att granska', value: pending.length, icon: '👀', format: 'number' },
-        { label: 'Omatchade', value: unmatched.length, icon: '❌', format: 'number' },
+        { label: 'Transaktioner', value: transactions.length, icon: '🏦', format: 'number',
+          onClick: () => setFilter(filter === 'all' ? 'all' : 'all'), active: filter === 'all' },
+        { label: 'Matchade', value: matched.length, icon: '✅', format: 'number',
+          onClick: () => setFilter(filter === 'approved' ? 'all' : 'approved'), active: filter === 'approved' },
+        { label: 'Att granska', value: pending.length, icon: '👀', format: 'number',
+          onClick: () => setFilter(filter === 'pending' ? 'all' : 'pending'), active: filter === 'pending' },
+        { label: 'Omatchade', value: unmatched.length, icon: '❌', format: 'number',
+          onClick: () => setFilter(filter === 'unmatched' ? 'all' : 'unmatched'), active: filter === 'unmatched' },
+        ...(commented.length > 0 ? [{
+          label: 'Kommentarer', value: commented.length, icon: '💬', format: 'number' as const,
+          onClick: () => setFilter(filter === 'commented' ? 'all' : 'commented'),
+          active: filter === 'commented',
+        }] : []),
       ]} />
 
       {showUpload && (
@@ -498,7 +587,7 @@ export default function BankavstamningPage() {
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-4xl h-[85vh] flex flex-col"
+              className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-7xl h-[90vh] flex flex-col"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
@@ -527,7 +616,7 @@ export default function BankavstamningPage() {
               key={tx.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: i * 0.02 }}
+              transition={{ delay: i < 20 ? i * 0.02 : 0 }}
               className={`p-4 bg-gray-900 border rounded-xl ${
                 tx.match_status === 'approved' || tx.match_status === 'manual' ? 'border-green-500/20' :
                 tx.match_status === 'pending' ? 'border-yellow-500/20' :
@@ -547,6 +636,9 @@ export default function BankavstamningPage() {
                 <p className="text-gray-400 text-xs truncate mb-2">{tx.reference}</p>
               )}
               {renderMatchSection(tx)}
+              <div className="mt-2 pt-2 border-t border-gray-800">
+                {renderCommentCell(tx)}
+              </div>
             </motion.div>
           ))}
           {filtered.length === 0 && (
@@ -566,6 +658,7 @@ export default function BankavstamningPage() {
                 <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Belopp</th>
                 <th className="text-right px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Saldo</th>
                 <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Matchning</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">Kommentar</th>
               </tr>
             </thead>
             <tbody>
@@ -574,7 +667,7 @@ export default function BankavstamningPage() {
                   key={tx.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.02 }}
+                  transition={{ delay: i < 20 ? i * 0.02 : 0 }}
                   className={`border-b border-gray-800/50 transition-colors ${
                     tx.match_status === 'approved' || tx.match_status === 'manual'
                       ? 'hover:bg-green-500/5'
@@ -596,6 +689,9 @@ export default function BankavstamningPage() {
                   </td>
                   <td className="px-4 py-3">
                     {renderMatchSection(tx)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {renderCommentCell(tx)}
                   </td>
                 </motion.tr>
               ))}

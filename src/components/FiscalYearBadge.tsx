@@ -1,20 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import type { FiscalYear } from '@/types'
+import { useSearchParams } from 'next/navigation'
 
 export default function FiscalYearBadge() {
-  const [year, setYear] = useState<number | null>(null)
-
-  useEffect(() => {
-    fetch('/api/fiscal-years')
-      .then(r => r.json())
-      .then((json) => {
-        const data: FiscalYear[] = json.data ?? json
-        const active = data.find(y => y.is_active)
-        if (active) setYear(active.year)
-      })
-  }, [])
+  const searchParams = useSearchParams()
+  const year = searchParams.get('year')
 
   if (!year) return null
 
