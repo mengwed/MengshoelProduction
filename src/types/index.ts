@@ -83,6 +83,7 @@ export interface Document {
   supplier_name?: string
   category_name?: string
   category_emoji?: string
+  attachment_count?: number
 }
 
 export interface DocumentLine {
@@ -194,6 +195,16 @@ export interface AILog {
   duration_ms: number | null
   raw_response: Record<string, unknown> | null
   error: string | null
+  created_at: string
+}
+
+export interface DocumentAttachment {
+  id: string
+  document_id: string
+  file_path: string
+  file_name: string
+  file_type: string
+  file_size: number
   created_at: string
 }
 

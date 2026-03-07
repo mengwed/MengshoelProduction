@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import type { Document, DocumentType, DocumentStatus, Customer, Supplier, Category } from '@/types'
+import type { Document, DocumentType, DocumentStatus, Customer, Supplier, Category, DocumentAttachment } from '@/types'
 import CustomSelect from '@/components/CustomSelect'
 import CustomCheckbox from '@/components/CustomCheckbox'
 
@@ -50,6 +50,9 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<DocumentAttachment[]>([])
+  const [uploadingAttachment, setUploadingAttachment] = useState(false)
+  const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [reparsing, setReparsing] = useState(false)
 
@@ -57,6 +60,7 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
     fetch('/api/customers').then(r => r.json()).then(d => setCustomers(d.data ?? d))
     fetch('/api/suppliers').then(r => r.json()).then(d => setSuppliers(d.data ?? d))
     fetch('/api/categories').then(r => r.json()).then(d => setCategories(d.data ?? d))
+    fetch(`/api/documents/${doc.id}/attachments`).then(r => r.json()).then(d => setAttachments(d.data ?? []))
     fetch(`/api/documents/${doc.id}/pdf-url`)
       .then(r => r.json())
       .then(d => {
@@ -113,6 +117,46 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
     if (!confirm('Ta bort detta dokument?')) return
     await fetch(`/api/documents/${doc.id}`, { method: 'DELETE' })
     onUpdate()
+  }
+
+  async function handleAttachmentUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setAttachmentError(null)
+    setUploadingAttachment(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch(`/api/documents/${doc.id}/attachments`, {
+        method: 'POST',
+        body: formData,
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        setAttachmentError(result.error || 'Uppladdning misslyckades')
+        return
+      }
+      setAttachments(prev => [...prev, result.data])
+    } catch {
+      setAttachmentError('Uppladdning misslyckades')
+    } finally {
+      setUploadingAttachment(false)
+    }
+  }
+
+  async function handleAttachmentOpen(attachment: DocumentAttachment) {
+    const res = await fetch(`/api/documents/${doc.id}/attachments/${attachment.id}/url`)
+    const result = await res.json()
+    if (result.data?.url) {
+      window.open(result.data.url, '_blank')
+    }
+  }
+
+  async function handleAttachmentDelete(attachment: DocumentAttachment) {
+    if (!confirm(`Ta bort bilagan "${attachment.file_name}"?`)) return
+    await fetch(`/api/documents/${doc.id}/attachments/${attachment.id}`, { method: 'DELETE' })
+    setAttachments(prev => prev.filter(a => a.id !== attachment.id))
   }
 
   const inputClass = "w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -274,10 +318,61 @@ export default function DocumentPanel({ document: doc, onClose, onUpdate }: Prop
               <CustomCheckbox
                 checked={vatPaid}
                 onChange={setVatPaid}
-                label="Har betalat moms"
+                label="Har överfört pengar till momskontot. Kom ihåg att ladda upp momsdragningen från banken!"
                 className="mb-6"
               />
             )}
+
+            {/* Attachments section */}
+            <div className="mb-6">
+              <label className="block text-xs text-gray-400 mb-2 uppercase tracking-wider">Bifogade filer</label>
+              {attachments.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {attachments.map(att => {
+                    const isPdf = att.file_type === 'application/pdf'
+                    const ext = att.file_name.split('.').pop()?.toUpperCase() || ''
+                    return (
+                      <div key={att.id} className="flex items-center gap-2 p-2 bg-gray-800 rounded-lg group">
+                        <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-gray-700 text-gray-300">{ext}</span>
+                        <button
+                          onClick={() => handleAttachmentOpen(att)}
+                          className="flex-1 text-sm text-gray-200 hover:text-white text-left truncate"
+                          title={isPdf ? 'Öppna PDF' : 'Ladda ner'}
+                        >
+                          {att.file_name}
+                        </button>
+                        <span className="text-xs text-gray-500">{(att.file_size / 1024).toFixed(0)} KB</span>
+                        <button
+                          onClick={() => handleAttachmentDelete(att)}
+                          className="text-gray-400 hover:text-red-400 transition-colors text-sm px-1"
+                          title="Ta bort bilaga"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              {attachments.length < 5 && (
+                <label className="inline-flex items-center gap-2 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-300 text-sm hover:bg-gray-700 transition-colors cursor-pointer">
+                  {uploadingAttachment ? 'Laddar upp...' : '+ Lägg till bilaga'}
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                    onChange={handleAttachmentUpload}
+                    disabled={uploadingAttachment}
+                    className="hidden"
+                  />
+                </label>
+              )}
+              {attachmentError && (
+                <p className="text-red-400 text-xs mt-2">{attachmentError}</p>
+              )}
+              {attachments.length >= 5 && (
+                <p className="text-gray-500 text-xs">Max 5 bilagor per dokument</p>
+              )}
+            </div>
 
             <div className="flex flex-wrap gap-3">
               <button

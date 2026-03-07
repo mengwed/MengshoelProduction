@@ -155,6 +155,9 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
               <div className="flex items-start justify-between mb-1">
                 <span className="text-white text-sm font-medium truncate mr-2">
                   {doc.customer_name || doc.supplier_name || '-'}
+                  {(doc.attachment_count ?? 0) > 0 && (
+                    <span className="ml-1 text-gray-400">📎</span>
+                  )}
                 </span>
                 <span className="text-white text-sm font-mono whitespace-nowrap">
                   {formatAmount(doc.amount)}
@@ -213,6 +216,9 @@ export default function DocumentList({ documents, onUpdate, highlightId }: Props
                   <td className="px-4 py-3 text-gray-400 text-sm">{TYPE_LABELS[doc.type] || doc.type}</td>
                   <td className="px-4 py-3 text-white text-sm font-medium">
                     {doc.customer_name || doc.supplier_name || '-'}
+                    {(doc.attachment_count ?? 0) > 0 && (
+                      <span className="ml-1.5 text-gray-400" title="Har bifogade filer">📎</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-sm">{doc.invoice_number || '-'}</td>
                   <td className="px-4 py-3 text-white text-sm text-right font-mono">{formatAmount(doc.amount)}</td>

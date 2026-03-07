@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
         *,
         customers(name),
         suppliers(name),
-        categories(name, emoji)
+        categories(name, emoji),
+        document_attachments(id)
       `)
       .order('invoice_date', { ascending: false })
       .eq('fiscal_year_id', fiscalYear.id)
@@ -118,9 +119,11 @@ export async function GET(request: NextRequest) {
       supplier_name: (doc.suppliers as Record<string, string> | null)?.name,
       category_name: (doc.categories as Record<string, string> | null)?.name,
       category_emoji: (doc.categories as Record<string, string> | null)?.emoji,
+      attachment_count: Array.isArray(doc.document_attachments) ? doc.document_attachments.length : 0,
       customers: undefined,
       suppliers: undefined,
       categories: undefined,
+      document_attachments: undefined,
     }))
 
     return apiSuccess(documents)
