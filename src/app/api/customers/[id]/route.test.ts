@@ -92,7 +92,7 @@ describe('PUT /api/customers/[id]', () => {
   it('returns validation error', async () => {
     vi.mocked(validateBody).mockReturnValue({
       error: Response.json({ error: 'Validation failed' }, { status: 400 }),
-    })
+    } as any)
 
     const res = await PUT(
       makeRequest({ name: '' }),
