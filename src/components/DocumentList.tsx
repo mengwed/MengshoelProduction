@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { Document } from '@/types'
 import DocumentPanel from '@/components/DocumentPanel'
 import CategoryPicker from '@/components/CategoryPicker'
+import Tooltip from '@/components/Tooltip'
 
 const TYPE_LABELS: Record<string, string> = {
   outgoing_invoice: 'Kundfaktura',
@@ -159,7 +160,7 @@ export default function DocumentList({ documents, onUpdate, highlightId, hideSta
                 <span className="text-white text-sm font-medium truncate mr-2">
                   {doc.customer_name || doc.supplier_name || '-'}
                   {(doc.attachment_count ?? 0) > 0 && (
-                    <span className="ml-1 text-gray-400">📎</span>
+                    <Tooltip text="Har bifogade filer"><span className="ml-1 text-gray-400">📎</span></Tooltip>
                   )}
                 </span>
                 <span className="text-white text-sm font-mono whitespace-nowrap">
@@ -172,11 +173,16 @@ export default function DocumentList({ documents, onUpdate, highlightId, hideSta
                   <span>{TYPE_LABELS[doc.type] || doc.type}</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  {doc.has_bank_match && (
+                    <Tooltip text="Kopplad till bankavstämning"><span className="text-xs">🏦</span></Tooltip>
+                  )}
                   {doc.type === 'outgoing_invoice' && doc.payment_received && (
-                    <span className="text-xs" title="Betalning mottagen">✅</span>
+                    <Tooltip text="Betalning mottagen"><span className="text-xs">✅</span></Tooltip>
                   )}
                   {doc.type === 'outgoing_invoice' && doc.vat_paid && (
-                    <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">Moms betald</span>
+                    <Tooltip text="Momsen för denna faktura är betald">
+                      <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">Moms betald</span>
+                    </Tooltip>
                   )}
                   {!hideStatus && (
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[doc.status]}`}>
@@ -184,7 +190,7 @@ export default function DocumentList({ documents, onUpdate, highlightId, hideSta
                     </span>
                   )}
                   {!hideStatus && doc.ai_needs_review && (
-                    <span className="text-yellow-400 text-xs">⚠️</span>
+                    <Tooltip text="AI:n är osäker — behöver granskas manuellt"><span className="text-yellow-400 text-xs">⚠️</span></Tooltip>
                   )}
                 </div>
               </div>
@@ -207,6 +213,9 @@ export default function DocumentList({ documents, onUpdate, highlightId, hideSta
                 <SortHeader label="Moms" col="vat" align="right" />
                 <SortHeader label="Ink moms" col="total" align="right" />
                 <SortHeader label="Kategori" col="category" />
+                <th className="px-4 py-3 text-xs uppercase tracking-wider text-gray-400 text-center w-10">
+                  <Tooltip text="Kopplad till bankavstämning" position="bottom"><span>🏦</span></Tooltip>
+                </th>
                 {!hideStatus && <SortHeader label="Status" col="status" align="center" />}
                 {!hideStatus && <SortHeader label="AI" col="ai" align="center" />}
               </tr>
@@ -226,20 +235,22 @@ export default function DocumentList({ documents, onUpdate, highlightId, hideSta
                   <td className="px-4 py-3 text-white text-sm font-medium">
                     {doc.customer_name || doc.supplier_name || '-'}
                     {(doc.attachment_count ?? 0) > 0 && (
-                      <span className="ml-1.5 text-gray-400" title="Har bifogade filer">📎</span>
+                      <Tooltip text="Har bifogade filer"><span className="ml-1.5 text-gray-400">📎</span></Tooltip>
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-sm">
                     {doc.invoice_number || '-'}
                     {doc.type === 'outgoing_invoice' && doc.payment_received && (
-                      <span className="ml-1" title="Betalning mottagen">✅</span>
+                      <Tooltip text="Betalning mottagen"><span className="ml-1">✅</span></Tooltip>
                     )}
                   </td>
                   <td className="px-4 py-3 text-white text-sm text-right font-mono">{formatAmount(doc.amount)}</td>
                   <td className="px-4 py-3 text-right">
                     <span className="text-gray-400 text-sm font-mono">{formatAmount(doc.vat)}</span>
                     {doc.type === 'outgoing_invoice' && doc.vat_paid && (
-                      <span className="ml-1.5 px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium whitespace-nowrap" title="Moms betald">Betald</span>
+                      <Tooltip text="Momsen för denna faktura är betald">
+                        <span className="ml-1.5 px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium whitespace-nowrap">Betald</span>
+                      </Tooltip>
                     )}
                   </td>
                   <td className="px-4 py-3 text-white text-sm text-right font-mono">
@@ -258,6 +269,11 @@ export default function DocumentList({ documents, onUpdate, highlightId, hideSta
                       }}
                     />
                   </td>
+                  <td className="px-4 py-3 text-center">
+                    {doc.has_bank_match && (
+                      <Tooltip text="Kopplad till bankavstämning"><span className="text-emerald-400 text-sm">🏦</span></Tooltip>
+                    )}
+                  </td>
                   {!hideStatus && (
                     <td className="px-4 py-3 text-center">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[doc.status]}`}>
@@ -268,9 +284,9 @@ export default function DocumentList({ documents, onUpdate, highlightId, hideSta
                   {!hideStatus && (
                     <td className="px-4 py-3 text-center">
                       {doc.ai_needs_review ? (
-                        <span className="text-yellow-400 text-sm" title="Behöver granskas">⚠️</span>
+                        <Tooltip text="AI:n är osäker — behöver granskas manuellt"><span className="text-yellow-400 text-sm">⚠️</span></Tooltip>
                       ) : (
-                        <span className="text-green-400 text-sm">{doc.ai_confidence}%</span>
+                        <Tooltip text={`AI:n är ${doc.ai_confidence}% säker på att uppgifterna stämmer`}><span className="text-green-400 text-sm">{doc.ai_confidence}%</span></Tooltip>
                       )}
                     </td>
                   )}

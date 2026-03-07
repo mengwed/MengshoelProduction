@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
         customers(name),
         suppliers(name),
         categories(name, emoji),
-        document_attachments(id)
+        document_attachments(id),
+        bank_transactions!matched_document_id(id)
       `)
       .order('invoice_date', { ascending: false })
 
@@ -139,10 +140,12 @@ export async function GET(request: NextRequest) {
       category_name: (doc.categories as Record<string, string> | null)?.name,
       category_emoji: (doc.categories as Record<string, string> | null)?.emoji,
       attachment_count: Array.isArray(doc.document_attachments) ? doc.document_attachments.length : 0,
+      has_bank_match: Array.isArray(doc.bank_transactions) && doc.bank_transactions.length > 0,
       customers: undefined,
       suppliers: undefined,
       categories: undefined,
       document_attachments: undefined,
+      bank_transactions: undefined,
     }))
 
     return apiSuccess(documents)

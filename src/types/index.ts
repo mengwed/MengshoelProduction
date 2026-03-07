@@ -85,6 +85,7 @@ export interface Document {
   category_name?: string
   category_emoji?: string
   attachment_count?: number
+  has_bank_match?: boolean
 }
 
 export interface DocumentLine {
