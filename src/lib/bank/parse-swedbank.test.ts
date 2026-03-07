@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseBank } from './parsers'
+import { fixSheetRange } from './parsers/swedbank'
 import * as XLSX from 'xlsx'
 
 function makeExcel(rows: (string | number | null)[][]): ArrayBuffer {
@@ -100,5 +101,68 @@ describe('swedbankParser (via parseBank)', () => {
     expect(transactions).toHaveLength(1)
     expect(transactions[0].booking_date).toBe('2025-01-15')
     expect(transactions[0].transaction_date).toBe('2025-01-14')
+  })
+
+  it('detects headers with Swedish characters (Bokföringsdatum)', () => {
+    const buffer = makeExcel([
+      ['Transaktioner Foretagskonto'],
+      [], [], [], [], [], [],
+      ['Radnummer', 'Bokföringsdatum', 'Transaktionsdatum', 'Valutadatum', 'Transaktionstyp', 'Referens', 'Belopp', 'Bokfört saldo'],
+      ['1', '2025-12-30', '2025-12-30', '2026-01-02', 'Bankgiro inbetalning', '57744724', 62500, 89623.28],
+    ])
+
+    const { parser, transactions } = parseBank(buffer)
+    expect(parser).toBe('Swedbank')
+    expect(transactions).toHaveLength(1)
+  })
+
+  it('parses 8-column format with Radnummer and Valutadatum correctly', () => {
+    const buffer = makeExcel([
+      ['Transaktioner Foretagskonto'],
+      [], [], [], [], [], [],
+      ['Radnummer', 'Bokföringsdatum', 'Transaktionsdatum', 'Valutadatum', 'Transaktionstyp', 'Referens', 'Belopp', 'Bokfört saldo'],
+      ['1', '2025-12-30', '2025-12-30', '2026-01-02', 'Bankgiro inbetalning', '57744724', 62500, 89623.28],
+      ['2', '2025-12-19', '2025-12-19', '2025-12-19', 'Bankgiro', 'BET 44556', -3500, 86123.28],
+    ])
+
+    const { transactions } = parseBank(buffer)
+
+    expect(transactions).toHaveLength(2)
+    expect(transactions[0]).toEqual({
+      booking_date: '2025-12-30',
+      transaction_date: '2025-12-30',
+      transaction_type: 'Bankgiro inbetalning',
+      reference: '57744724',
+      amount: 62500,
+      balance: 89623.28,
+    })
+    expect(transactions[1]).toEqual({
+      booking_date: '2025-12-19',
+      transaction_date: '2025-12-19',
+      transaction_type: 'Bankgiro',
+      reference: 'BET 44556',
+      amount: -3500,
+      balance: 86123.28,
+    })
+  })
+
+  it('fixSheetRange corrects truncated !ref (Swedbank export bug)', () => {
+    // Swedbank exports have cells beyond !ref — simulate by creating a sheet
+    // and manually truncating the ref after creation
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['Radnummer', 'Bokföringsdatum', 'Transaktionsdatum', 'Valutadatum', 'Transaktionstyp', 'Referens', 'Belopp', 'Bokfört saldo'],
+      ['1', '2025-12-30', '2025-12-30', '2026-01-02', 'Bankgiro', 'REF1', 1000, 5000],
+      ['2', '2025-12-29', '2025-12-29', '2025-12-29', 'Kortkop', 'REF2', -200, 4800],
+      ['3', '2025-12-28', '2025-12-28', '2025-12-28', 'Autogiro', 'REF3', -500, 4300],
+    ])
+
+    // Truncate ref to only 2 rows (simulating Swedbank's bug)
+    ws['!ref'] = 'A1:H2'
+    expect(XLSX.utils.sheet_to_json(ws, { header: 1 })).toHaveLength(2)
+
+    // fixSheetRange should expand to cover all cells
+    fixSheetRange(ws)
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 })
+    expect(rows).toHaveLength(4) // header + 3 data rows
   })
 })

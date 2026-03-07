@@ -13,6 +13,7 @@ interface DocumentMatch {
   invoice_number: string | null
   total: number | null
   amount: number | null
+  vat: number | null
   invoice_date: string | null
   type: string
   suppliers: { name: string } | null
@@ -35,7 +36,9 @@ export function scoreMatch(tx: TransactionInput, doc: DocumentMatch): number {
 
   const txAmount = Math.abs(tx.amount)
   const docTotal = Math.abs(doc.total ?? doc.amount ?? 0)
-  const amountMatch = docTotal > 0 && Math.abs(txAmount - docTotal) < 0.01
+  const docAmountPlusVat = Math.abs((doc.amount ?? 0) + (doc.vat ?? 0))
+  const amountMatch = (docTotal > 0 && Math.abs(txAmount - docTotal) < 0.01) ||
+    (docAmountPlusVat > 0 && Math.abs(txAmount - docAmountPlusVat) < 0.01)
 
   // 2. Amount + date proximity
   if (amountMatch && doc.invoice_date) {
@@ -49,8 +52,8 @@ export function scoreMatch(tx: TransactionInput, doc: DocumentMatch): number {
   // 3. Supplier/customer name in reference
   if (tx.reference) {
     const refLower = tx.reference.toLowerCase()
-    const name = doc.suppliers?.name || doc.customers?.name
-    if (name && refLower.includes(name.toLowerCase().slice(0, 8))) {
+    const name = (doc.suppliers?.name || doc.customers?.name || '').trim()
+    if (name.length >= 4 && refLower.includes(name.toLowerCase().slice(0, Math.max(4, Math.min(name.length, 8))))) {
       return amountMatch ? 0.70 : 0.40
     }
   }
@@ -66,7 +69,7 @@ export async function matchTransactions(
 
   const { data: documents } = await supabase
     .from('documents')
-    .select('id, invoice_number, total, amount, invoice_date, type, suppliers(name), customers(name)')
+    .select('id, invoice_number, total, amount, vat, invoice_date, type, suppliers(name), customers(name)')
     .eq('fiscal_year_id', fiscalYearId)
 
   if (!documents) {

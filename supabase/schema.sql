@@ -111,6 +111,11 @@ CREATE TABLE bank_transactions (
   amount DECIMAL(12,2) NOT NULL,
   balance DECIMAL(12,2),
   matched_document_id UUID REFERENCES documents(id) ON DELETE SET NULL,
+  match_confidence DECIMAL(3,2),
+  ai_suggestion_id UUID REFERENCES documents(id) ON DELETE SET NULL,
+  ai_confidence DECIMAL(3,2),
+  ai_explanation TEXT,
+  match_status TEXT CHECK (match_status IN ('pending', 'approved', 'rejected', 'manual')),
   import_batch_id UUID NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );
