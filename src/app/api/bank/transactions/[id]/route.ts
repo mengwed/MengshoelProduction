@@ -44,6 +44,9 @@ export async function PATCH(
           update.match_confidence = 1.0
           update.match_status = 'manual'
           break
+        case 'ignore':
+          update.match_status = 'ignored'
+          break
         case 'unlink':
           update.matched_document_id = null
           update.match_confidence = null
@@ -63,10 +66,13 @@ export async function PATCH(
       .from('bank_transactions')
       .update(update)
       .eq('id', id)
-      .select('*, documents(file_name, type, invoice_number, total)')
+      .select('*, documents!matched_document_id(file_name, type, invoice_number, total)')
       .single()
 
-    if (error) return apiError(error.message, 500)
+    if (error) {
+      console.error('PATCH error:', error)
+      return apiError(error.message, 500)
+    }
     return apiSuccess(data)
   } catch (e) {
     return handleApiError(e)

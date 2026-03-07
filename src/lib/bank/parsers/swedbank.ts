@@ -1,6 +1,27 @@
 import * as XLSX from 'xlsx'
 import type { BankParser, ParsedTransaction } from './types'
 
+// Exported for testing
+export { fixSheetRange }
+
+// Swedbank exports often have a !ref that only covers a few rows,
+// even though data exists far beyond. Fix by scanning all cell keys
+// to find the true range.
+function fixSheetRange(sheet: XLSX.WorkSheet): void {
+  const keys = Object.keys(sheet).filter(k => !k.startsWith('!'))
+  if (keys.length === 0) return
+
+  let maxRow = 0
+  let maxCol = 0
+  for (const key of keys) {
+    const cell = XLSX.utils.decode_cell(key)
+    if (cell.r > maxRow) maxRow = cell.r
+    if (cell.c > maxCol) maxCol = cell.c
+  }
+
+  sheet['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxRow, c: maxCol } })
+}
+
 function parseDate(value: unknown): string | null {
   if (!value) return null
   const str = String(value).trim()
@@ -39,6 +60,7 @@ export const swedbankParser: BankParser = {
   detect(workbook) {
     const sheet = workbook.Sheets[workbook.SheetNames[0]]
     if (!sheet) return false
+    fixSheetRange(sheet)
     const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
     return rows.some(row =>
       row?.some(cell =>
@@ -50,6 +72,7 @@ export const swedbankParser: BankParser = {
 
   parse(workbook) {
     const sheet = workbook.Sheets[workbook.SheetNames[0]]
+    fixSheetRange(sheet)
     const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
 
     let headerIndex = -1

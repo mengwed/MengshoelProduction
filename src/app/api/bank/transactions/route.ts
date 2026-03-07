@@ -19,12 +19,34 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('bank_transactions')
-      .select('*, documents(file_name, type, invoice_number, total), ai_suggestion:documents!ai_suggestion_id(file_name, type, invoice_number, total)')
+      .select('*, documents!matched_document_id(file_name, type, invoice_number, total)')
       .eq('fiscal_year_id', fiscalYear.id)
       .order('booking_date', { ascending: false })
 
     if (error) return apiError(error.message, 500)
-    return apiSuccess(data)
+
+    // Fetch AI suggestion documents separately for transactions that have one
+    const txsWithAiSuggestion = (data ?? []).filter((t: Record<string, unknown>) => t.ai_suggestion_id)
+    const aiDocIds = [...new Set(txsWithAiSuggestion.map((t: Record<string, unknown>) => t.ai_suggestion_id as string))]
+
+    let aiDocsMap: Record<string, { file_name: string; type: string; invoice_number: string | null; total: number | null }> = {}
+    if (aiDocIds.length > 0) {
+      const { data: aiDocs } = await supabase
+        .from('documents')
+        .select('id, file_name, type, invoice_number, total')
+        .in('id', aiDocIds)
+
+      if (aiDocs) {
+        aiDocsMap = Object.fromEntries(aiDocs.map(d => [d.id, { file_name: d.file_name, type: d.type, invoice_number: d.invoice_number, total: d.total }]))
+      }
+    }
+
+    const result = (data ?? []).map((tx: Record<string, unknown>) => ({
+      ...tx,
+      ai_suggestion: tx.ai_suggestion_id ? aiDocsMap[tx.ai_suggestion_id as string] ?? null : null,
+    }))
+
+    return apiSuccess(result)
   } catch (e) {
     return handleApiError(e)
   }

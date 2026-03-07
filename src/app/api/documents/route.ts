@@ -85,6 +85,15 @@ export async function GET(request: NextRequest) {
       ])
 
       const orFilters = [`file_name.ilike.${term}`, `invoice_number.ilike.${term}`]
+
+      // Allow searching by amount (exact or close match)
+      const numericSearch = parseFloat(search.replace(/\s/g, '').replace(/,/g, '.'))
+      if (!isNaN(numericSearch)) {
+        orFilters.push(`total.eq.${numericSearch}`)
+        orFilters.push(`total.eq.${-numericSearch}`)
+        orFilters.push(`amount.eq.${numericSearch}`)
+        orFilters.push(`amount.eq.${-numericSearch}`)
+      }
       if (matchingSuppliers?.length) {
         orFilters.push(`supplier_id.in.(${matchingSuppliers.map(s => s.id).join(',')})`)
       }
