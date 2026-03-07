@@ -43,7 +43,7 @@ export const swedbankParser: BankParser = {
     return rows.some(row =>
       row?.some(cell =>
         typeof cell === 'string' &&
-        (cell.includes('Bokforingsdatum') || cell.includes('Bokforingsdag') || cell.includes('Clnr'))
+        (cell.includes('Bokforingsdatum') || cell.includes('Bokföringsdatum') || cell.includes('Bokforingsdag') || cell.includes('Clnr') || cell.includes('Radnummer'))
       )
     )
   },
@@ -53,13 +53,15 @@ export const swedbankParser: BankParser = {
     const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
 
     let headerIndex = -1
+    let hasRadnummer = false
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]
       if (row?.some((cell: string) =>
         typeof cell === 'string' &&
-        (cell.includes('Bokforingsdatum') || cell.includes('Bokforingsdag') || cell.includes('Clnr'))
+        (cell.includes('Bokforingsdatum') || cell.includes('Bokföringsdatum') || cell.includes('Bokforingsdag') || cell.includes('Clnr') || cell.includes('Radnummer'))
       )) {
         headerIndex = i
+        hasRadnummer = row.some((cell: string) => typeof cell === 'string' && cell.includes('Radnummer'))
         break
       }
     }
@@ -81,7 +83,16 @@ export const swedbankParser: BankParser = {
       let amount: number | null
       let balance: number | null
 
-      if (hasClnr) {
+      if (hasRadnummer) {
+        // 8-column format: Radnummer | Bokföringsdatum | Transaktionsdatum | Valutadatum | Transaktionstyp | Referens | Belopp | Bokfört saldo
+        bookingDate = parseDate(row[1])
+        transactionDate = parseDate(row[2])
+        // row[3] = Valutadatum (skip)
+        transactionType = row[4] ? String(row[4]) : null
+        reference = row[5] ? String(row[5]) : null
+        amount = parseAmount(row[6])
+        balance = parseAmount(row[7])
+      } else if (hasClnr) {
         bookingDate = parseDate(row[1])
         transactionDate = parseDate(row[2])
         transactionType = row[3] ? String(row[3]) : null
